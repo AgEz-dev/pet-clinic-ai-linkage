@@ -170,6 +170,7 @@
         本页为<b>脚本化回放</b>（零后端依赖，可离线打开）：文案、事件序列、时延与帧数取自真实实测记录
         （急症拦截中位 1.48ms、单次提问 301 帧、守卫与拒答文案均照抄代码）。
         真实系统里同样的事件由 Agent 逐帧发出、Java 中继转发。
+        另：疫苗 / 既往疾病与手术 / 在用药 / 过敏史 四项由宠物档案带出，档案里有值就不问；档案缺失时会作为必问项补问（本页演示的是档案齐全的宠物，故不追问）。
       </p></div>
     </div>
   </div>
@@ -271,14 +272,14 @@ const OPENING_TEXT =
 const SLOT_GROUPS = [
   { title:'基础槽位', keys:['chief','onset','exposure','progression','treatment','general'] },
   { title:'呕吐分支（命中关键词后激活）', keys:['vomit_content','vomit_kind','vomit_relation','vomit_freq','vomit_danger','vomit_associated'], branch:true },
-  { title:'档案槽位（有值不问）', keys:['vaccine','past_disease','allergy'], archive:true }
+  { title:'档案槽位（档案有值不问，缺失时必问）', keys:['vaccine','past_disease','medications','allergy'], archive:true }
 ];
 const SLOT_NAMES = {
   chief:'主诉', onset:'起病时间与急缓', exposure:'48h 摄入与接触史', progression:'发展与演变',
   treatment:'诊疗经过及效果', general:'一般情况',
   vomit_content:'呕吐物性状', vomit_kind:'呕吐/反流区分', vomit_relation:'与进食时间关系',
   vomit_freq:'24h 频次', vomit_danger:'危险信号筛查', vomit_associated:'伴随症状',
-  vaccine:'预防接种', past_disease:'既往疾病与手术', allergy:'过敏史'
+  vaccine:'预防接种', past_disease:'既往疾病与手术', medications:'在用药', allergy:'过敏史'
 };
 const SLOT_WHY = {
   chief:'P1 主诉定性优先：先锁定「哪里不舒服、多久了」',
@@ -286,7 +287,12 @@ const SLOT_WHY = {
   vomit_danger:'P2 鉴别：危险信号优先于补充细节',
   progression:'P2 鉴别：进展方向决定处置急缓'
 };
-const ARCHIVE_PREFILL = { vaccine:'狂犬疫苗 逾期 5 天 / 卫佳伍 20 天后加强', allergy:'无已知过敏' };
+const ARCHIVE_PREFILL = {
+  vaccine:'已有 3 条接种记录（狂犬疫苗逾期 5 天）',
+  past_disease:'最近就诊：急性胃肠炎',
+  medications:'有 2 张处方记录',
+  allergy:'无已知过敏'
+};
 
 // 每一轮：who=ai 时携带本轮追问（1–2 个）；who=owner 时携带回答与槽位变化
 const S2 = [
@@ -467,7 +473,7 @@ $('#send0').onclick = async () => {
 };
 
 /* ============================ 场景② 预问诊 ============================ */
-let i2 = 0, slots = {};
+let slots = {};
 function renderSlots(){
   const branchOn = !!slots.__branch;
   const rows = SLOT_GROUPS.map(g => {
@@ -492,7 +498,7 @@ function renderSlots(){
   setMetrics([['槽位进度', filled + ' / ' + total, filled === total ? 'b-ok' : ''],
               ['已答轮次', String(round)],
               ['分支', branchOn ? '呕吐（已激活）' : '未激活', branchOn ? 'b-b' : ''],
-              ['档案预填', '疫苗 / 过敏', 'b-b'],
+              ['档案预填', '4 项（疫苗 / 既往 / 用药 / 过敏）', 'b-b'],
               ['急症中断', '未触发', 'b-ok']]);
 }
 let step = 0, round = 0;
@@ -516,7 +522,7 @@ $('#next1').onclick = async () => {
     if (it.finish){
       logEv('+1.2 s', 'done', 'intake.summary 结构化摘要');
       bubble('#chat1', 'bubble a warn',
-        '【摘要 · 待宠主确认】\n主诉：犬呕吐 1 天（今晨 2 次），呕吐物为黄绿色泡沫样液体，进食后不久即吐，伴用力干呕，禁食后未见好转\n现病史：逐渐加重；精神与食欲下降，饮水减少；无腹泻\n既往：狂犬疫苗逾期 5 天，卫佳伍 20 天后加强；无已知过敏\n待补充：体重未测量\n\nAI 提示（非诊断）：建议现场先排除误食与异物，并评估脱水程度与腹部触诊。');
+        '【摘要 · 待宠主确认】\n主诉：犬呕吐 1 天（今晨 2 次），呕吐物为黄绿色泡沫样液体，进食后不久即吐，伴用力干呕，禁食后未见好转\n现病史：逐渐加重；精神与食欲下降，饮水减少；无腹泻\n既往（来自档案）：犬三联已完成；狂犬疫苗年加强逾期 5 天\n既往就诊：最近一次急性胃肠炎；在用药：有 2 张处方记录；过敏史：无已知过敏\n待补充：体重未测量\n\nAI 提示（非诊断）：建议现场先排除误食与异物，并评估脱水程度与腹部触诊。');
       bubble('#chat1', 'bubble sysnote',
         '摘要与「宠主原话」并置：医生端两者互为核对 —— 归纳可能错，原话不会变；提交后内容冻结，不能再修改。');
       $('#submit1').disabled = false;
@@ -542,8 +548,16 @@ $('#submit1').onclick = () => {
   bubble('#chat1','bubble sysnote','✅ 已提交给医生。此后宠主无法再修改 —— 避免医生看到的内容"偷偷变"。');
   $('#submit1').disabled = true;
 };
-$('#reset1').onclick = () => { i2 = 0; slots = { vaccine:'已明确', allergy:'已明确' }; clearEv(); $('#chat1').innerHTML=''; $('#submit1').disabled=true; $('#next1').disabled=false;
-  bubble('#chat1','bubble sysnote','等待宠主第一句（右侧槽位会随对话逐格点亮）。'); renderSlots(); };
+// 重置 = 重新进入会话：清空状态后由 AI 重新发开场（与进入场景的行为一致）
+function resetIntake(autoOpen){
+  step = 0; round = 0;
+  slots = { vaccine:'已明确', past_disease:'已明确', medications:'已明确', allergy:'已明确' };   // 档案槽位有值就不问
+  clearEv(); setMetrics([]); $('#chat1').innerHTML = '';
+  $('#submit1').disabled = true; $('#next1').disabled = false;
+  renderSlots();
+  if (autoOpen) $('#next1').click();   // AI 先发开场
+}
+$('#reset1').onclick = () => resetIntake(true);
 
 /* ============================ 场景③ 病历起草 ============================ */
 async function typing(node, text){
@@ -594,7 +608,7 @@ function showScene(n){
   $('#tSub').textContent = titles[n][1];
   clearEv(); setMetrics([]);
   if (n===0) reset1();
-  if (n===1){ $('#reset1').click(); $('#next1').click(); }   // 进入即触发 AI 开场
+  if (n===1) resetIntake(true);   // 进入即由 AI 发开场
   if (n===2) $('#reset2').click();
 }
 document.querySelectorAll('.tab').forEach(t => t.onclick = () => showScene(+t.dataset.scene));
