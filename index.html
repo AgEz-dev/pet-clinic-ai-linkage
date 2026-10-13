@@ -5,72 +5,81 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>宠安康 × VetClaw：从挂号到病历的 AI 分诊联动</title>
 <style>
+  /* ===== 设计令牌：对齐宠安康前端（dashboard/Index.vue · App.vue）===== */
   :root{
-    --bg:#f7f8fa; --panel:#ffffff; --ink:#111827; --ink2:#4b5563; --ink3:#8a94a3;
-    --line:#e5e7eb; --brand:#1d4ed8; --brand-soft:#eff6ff; --ok:#047857; --ok-soft:#ecfdf5;
-    --warn:#b45309; --warn-soft:#fffbeb; --radius:14px;
-    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
-    --sans:system-ui,-apple-system,"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
+    --bg:#f5f6f8; --bg-warm:#faf8f5; --panel:#ffffff;
+    --ink:#111827; --ink2:#6b7280; --ink3:#9ca3af;
+    --line:#efe8df; --line-cool:#ebeef5;
+    --brand:#409eff;            /* Element 主色 */
+    --green:#10b981; --green-deep:#059669; --green-ink:#065f46;
+    --green-soft:#ecfdf5; --green-line:#a7f3d0;
+    --amber-soft:#fffbeb; --amber:#e6a23c;
+    --danger:#f56c6c;
+    --radius:12px; --radius-lg:14px;
+    --shadow:0 8px 20px rgba(17,24,39,.08);
+    --sans:'PingFang SC','Microsoft YaHei','Helvetica Neue',Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.75 var(--sans);-webkit-font-smoothing:antialiased}
-  .wrap{max-width:1040px;margin:0 auto;padding:0 20px}
-  section{padding:56px 0 8px}
-  h1{font-size:34px;line-height:1.3;margin:0 0 14px;letter-spacing:-.4px}
-  h2{font-size:22px;margin:0 0 6px;letter-spacing:-.2px}
-  h2 .idx{color:var(--brand);font-family:var(--mono);font-size:15px;margin-right:10px;vertical-align:2px}
-  h3{font-size:17px;margin:0 0 6px}
-  p{margin:0 0 14px;color:var(--ink2)}
-  .lead{font-size:17px;color:var(--ink2)}
-  .hr{height:1px;background:var(--line);margin:34px 0}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.75 var(--sans);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 20px}
+  section{padding:34px 0 6px}
+  h1{font-size:24px;line-height:1.45;margin:0 0 10px;font-weight:700;letter-spacing:0}
+  h1 small{display:block;font-size:14px;font-weight:400;color:var(--ink2);margin-top:6px}
+  h2{font-size:15px;margin:0 0 12px;font-weight:700;display:flex;align-items:center;gap:8px}
+  h2::before{content:'';width:4px;height:14px;background:var(--green);border-radius:2px;display:inline-block}
+  h3{font-size:14px;margin:0 0 6px;font-weight:700;color:var(--ink)}
+  p{margin:0 0 12px;color:var(--ink2);font-size:14px}
+  .lead{font-size:14.5px;color:var(--ink2);margin:0 0 12px}
+  .hr{height:1px;background:var(--line);margin:26px 0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px}
   .grid{display:grid;gap:14px}
   .g2{grid-template-columns:repeat(2,minmax(0,1fr))}
   .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
   .g4{grid-template-columns:repeat(4,minmax(0,1fr))}
-  /* hero */
-  header{background:linear-gradient(180deg,#ffffff 0%,#f7f8fa 100%);border-bottom:1px solid var(--line);padding:64px 0 44px}
-  .badges{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
-  .badge{font-size:13px;padding:4px 12px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--ink2)}
-  .badge.b{border-color:#c7d7fe;background:var(--brand-soft);color:var(--brand)}
-  kbd{font-family:var(--mono);font-size:13px;background:#f3f4f6;border:1px solid var(--line);border-radius:6px;padding:2px 7px}
-  /* kpi */
-  .kpi{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
-  .kpi b{display:block;font-size:26px;line-height:1.2;letter-spacing:-.5px}
-  .kpi span{font-size:13px;color:var(--ink3)}
-  .kpi .u{font-size:14px;color:var(--ink2);font-weight:600;margin-left:3px}
-  /* tables */
-  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;font-size:14.5px}
-  th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
-  th{background:#fafbfc;font-weight:600;color:var(--ink);white-space:nowrap}
+  /* 首屏：沿用前端 hero 卡的渐变与描边 */
+  header{background:linear-gradient(120deg,#ecfdf5 0%,#ffffff 60%,#fffbeb 100%);
+    border-bottom:1px solid var(--green-line);padding:34px 0 26px}
+  header .card{box-shadow:none}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px}
+  .kpi span{display:block;font-size:12px;color:var(--ink3);margin-bottom:6px}
+  .kpi b{font-size:22px;line-height:1.2;font-weight:700;color:var(--ink)}
+  .kpi .u{font-size:13px;font-weight:400;color:var(--ink3);margin-left:2px}
+  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line-cool);
+    border-radius:var(--radius);overflow:hidden;font-size:13.5px}
+  th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line-cool);vertical-align:top}
+  th{background:#fafafa;font-weight:600;color:var(--ink);white-space:nowrap;font-size:13px}
   tr:last-child td{border-bottom:none}
   td.k{color:var(--ink);font-weight:600;white-space:nowrap}
-  .mono{font-family:var(--mono);font-size:13.5px}
+  .mono{font-family:var(--mono);font-size:13px}
   .muted{color:var(--ink3)}
-  /* figures */
   figure{margin:0}
-  figure img{width:100%;border:1px solid var(--line);border-radius:10px;display:block;background:#fff}
-  figcaption{font-size:13px;color:var(--ink3);margin-top:8px}
-  .flow{display:grid;gap:10px;grid-template-columns:repeat(2,minmax(0,1fr))}
-  ul{margin:0 0 14px;padding-left:20px;color:var(--ink2)}
+  figure img{width:100%;border:1px solid var(--line-cool);border-radius:8px;display:block;background:#fff}
+  figcaption{font-size:12.5px;color:var(--ink3);margin-top:8px}
+  ul{margin:0 0 12px;padding-left:20px;color:var(--ink2)}
   li{margin:5px 0}
-  .tag{display:inline-block;font-size:12.5px;padding:2px 9px;border-radius:999px;margin:0 6px 6px 0}
-  .t-ok{background:var(--ok-soft);color:var(--ok);border:1px solid #a7f3d0}
-  .t-warn{background:var(--warn-soft);color:var(--warn);border:1px solid #fcd34d}
-  .t-b{background:var(--brand-soft);color:var(--brand);border:1px solid #c7d7fe}
-  footer{padding:40px 0 64px;color:var(--ink3);font-size:13.5px}
-  /* 拓扑图：窄屏不缩字，改为容器内横向滚动，保证可读 */
+  .card.feature{transition:transform .18s ease, box-shadow .18s ease}
+  .card.feature:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+  .tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:4px;margin:0 6px 6px 0;
+    border:1px solid var(--line-cool);background:#f4f4f5;color:var(--ink2)}
+  .t-ok{background:var(--green-soft);color:var(--green-ink);border-color:var(--green-line)}
+  .t-warn{background:var(--amber-soft);color:#b88230;border-color:#f5dab1}
+  .t-b{background:#ecf5ff;color:#337ecc;border-color:#d9ecff}
+  footer{padding:28px 0 48px;color:var(--ink3);font-size:13px}
   .svgbox{overflow-x:auto;-webkit-overflow-scrolling:touch}
   .svgbox svg{min-width:660px;display:block}
+  .cta{display:inline-block;background:var(--brand);color:#fff;text-decoration:none;
+    padding:10px 20px;border-radius:8px;font-weight:600;font-size:14px;
+    transition:background .18s ease}
+  .cta:hover{background:#337ecc}
   @media (max-width:900px){
     .g4{grid-template-columns:repeat(2,minmax(0,1fr))}
     .g3{grid-template-columns:1fr}
-    .flow{grid-template-columns:1fr}
-    h1{font-size:26px}
+    h1{font-size:21px}
   }
   @media (max-width:560px){
     .g2,.g4{grid-template-columns:1fr}
-    section{padding:40px 0 6px}
+    section{padding:26px 0 4px}
   }
 </style>
 </head>
@@ -80,8 +89,7 @@
   <div class="wrap">
     <h1>宠安康 × VetClaw<br>从挂号到病历的 AI 分诊联动</h1>
     <div style="margin:18px 0 22px">
-      <a href="demo.html" style="display:inline-block;background:#1d4ed8;color:#fff;text-decoration:none;
-         padding:12px 22px;border-radius:10px;font-weight:600">▶ 点击展示可交互演示</a>
+      <a href="demo.html" class="cta">▶ 点击展示可交互演示</a>
       <span class="muted" style="margin-left:12px;font-size:13.5px">三个场景可随时切换：分诊问答 · 预问诊 · 病历起草</span>
     </div>
     <p class="lead">
@@ -107,41 +115,41 @@
     <svg viewBox="0 0 680 320" width="100%" role="img" aria-label="系统拓扑：Vue 前端 → Java 网关 → VetClaw Agent">
     <defs>
       <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
-        <path d="M0,0 L7,3 L0,6 z" fill="#4b5563"/>
+        <path d="M0,0 L7,3 L0,6 z" fill="#606266"/>
       </marker>
     </defs>
     <!-- 左：前端 -->
     <rect id="box-front" x="8" y="112" width="132" height="78" rx="12" fill="#ffffff" stroke="#e5e7eb"/>
-    <text x="74" y="143" text-anchor="middle" font-size="15" font-weight="600" fill="#111827">Vue 3 前端</text>
-    <text x="74" y="165" text-anchor="middle" font-size="12" fill="#8a94a3">宠主端 / 医生端</text>
+    <text x="74" y="143" text-anchor="middle" font-size="15" font-weight="600" fill="#303133">Vue 3 前端</text>
+    <text x="74" y="165" text-anchor="middle" font-size="12" fill="#909399">宠主端 / 医生端</text>
 
     <!-- 中：Java 网关（加宽至 252，容纳标题与三行说明）-->
-    <rect id="box-gate" x="196" y="72" width="252" height="158" rx="12" fill="#eff6ff" stroke="#c7d7fe"/>
-    <text x="322" y="104" text-anchor="middle" font-size="15" font-weight="600" fill="#1d4ed8">Java 网关（Spring Boot）</text>
-    <text x="322" y="130" text-anchor="middle" font-size="12" fill="#4b5563">鉴权 · 限流 · 审计 · 落库</text>
-    <text x="322" y="152" text-anchor="middle" font-size="12" fill="#4b5563">SSE 中继 · 三级降级 · 提供方路由</text>
-    <text x="322" y="174" text-anchor="middle" font-size="12" fill="#8a94a3">MySQL 8（会话 / 病历 / 审计）</text>
+    <rect id="box-gate" x="196" y="72" width="252" height="158" rx="12" fill="#ecf5ff" stroke="#d9ecff"/>
+    <text x="322" y="104" text-anchor="middle" font-size="15" font-weight="600" fill="#337ecc">Java 网关（Spring Boot）</text>
+    <text x="322" y="130" text-anchor="middle" font-size="12" fill="#606266">鉴权 · 限流 · 审计 · 落库</text>
+    <text x="322" y="152" text-anchor="middle" font-size="12" fill="#606266">SSE 中继 · 三级降级 · 提供方路由</text>
+    <text x="322" y="174" text-anchor="middle" font-size="12" fill="#909399">MySQL 8（会话 / 病历 / 审计）</text>
 
     <!-- 右：Agent（加宽至 158，长词拆行）-->
     <rect id="box-agent" x="514" y="86" width="158" height="130" rx="12" fill="#ecfdf5" stroke="#a7f3d0"/>
-    <text x="593" y="116" text-anchor="middle" font-size="15" font-weight="600" fill="#047857">VetClaw Agent</text>
-    <text x="593" y="140" text-anchor="middle" font-size="12" fill="#4b5563">FastAPI · ReAct 引擎</text>
-    <text x="593" y="160" text-anchor="middle" font-size="12" fill="#4b5563">LangGraph 可选</text>
-    <text x="593" y="180" text-anchor="middle" font-size="12" fill="#4b5563">RAG 检索 · 规则守卫</text>
+    <text x="593" y="116" text-anchor="middle" font-size="15" font-weight="600" fill="#059669">VetClaw Agent</text>
+    <text x="593" y="140" text-anchor="middle" font-size="12" fill="#606266">FastAPI · ReAct 引擎</text>
+    <text x="593" y="160" text-anchor="middle" font-size="12" fill="#606266">LangGraph 可选</text>
+    <text x="593" y="180" text-anchor="middle" font-size="12" fill="#606266">RAG 检索 · 规则守卫</text>
 
     <!-- 连线与标注（标注放在箭头间隙中部，留足宽度）-->
-    <line x1="140" y1="136" x2="192" y2="136" stroke="#4b5563" stroke-width="1.4" marker-end="url(#ar)"/>
-    <line x1="192" y1="166" x2="140" y2="166" stroke="#4b5563" stroke-width="1.4" marker-end="url(#ar)"/>
-    <text x="166" y="128" text-anchor="middle" font-size="11" fill="#4b5563">POST</text>
-    <text x="166" y="184" text-anchor="middle" font-size="11" fill="#4b5563">逐帧转发</text>
+    <line x1="140" y1="136" x2="192" y2="136" stroke="#909399" stroke-width="1.4" marker-end="url(#ar)"/>
+    <line x1="192" y1="166" x2="140" y2="166" stroke="#909399" stroke-width="1.4" marker-end="url(#ar)"/>
+    <text x="166" y="128" text-anchor="middle" font-size="11" fill="#606266">POST</text>
+    <text x="166" y="184" text-anchor="middle" font-size="11" fill="#606266">逐帧转发</text>
 
-    <line x1="448" y1="122" x2="510" y2="122" stroke="#4b5563" stroke-width="1.4" marker-end="url(#ar)"/>
-    <line x1="510" y1="152" x2="448" y2="152" stroke="#4b5563" stroke-width="1.4" marker-end="url(#ar)"/>
-    <text x="479" y="114" text-anchor="middle" font-size="11" fill="#4b5563">SSE</text>
-    <text x="479" y="170" text-anchor="middle" font-size="11" fill="#4b5563">JSON</text>
+    <line x1="448" y1="122" x2="510" y2="122" stroke="#909399" stroke-width="1.4" marker-end="url(#ar)"/>
+    <line x1="510" y1="152" x2="448" y2="152" stroke="#909399" stroke-width="1.4" marker-end="url(#ar)"/>
+    <text x="479" y="114" text-anchor="middle" font-size="11" fill="#606266">SSE</text>
+    <text x="479" y="170" text-anchor="middle" font-size="11" fill="#606266">JSON</text>
 
-    <text x="340" y="268" text-anchor="middle" font-size="12.5" fill="#4b5563">统一契约：6 类事件（thought / tool_call / tool_result / token / done / error）</text>
-    <text x="340" y="290" text-anchor="middle" font-size="12.5" fill="#8a94a3">X-Trace-Id 双向穿透 · 双引擎（手写 ReAct / LangGraph）事件序列逐字节一致</text>
+    <text x="340" y="268" text-anchor="middle" font-size="12.5" fill="#606266">统一契约：6 类事件（thought / tool_call / tool_result / token / done / error）</text>
+    <text x="340" y="290" text-anchor="middle" font-size="12.5" fill="#909399">X-Trace-Id 双向穿透 · 双引擎（手写 ReAct / LangGraph）事件序列逐字节一致</text>
   </svg>
   </div>
 </section>

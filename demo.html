@@ -6,68 +6,76 @@
 <title>可交互演示 · 宠安康 × VetClaw</title>
 <style>
   :root{
-    --bg:#f7f8fa;--panel:#fff;--ink:#111827;--ink2:#4b5563;--ink3:#8a94a3;--line:#e5e7eb;
-    --brand:#1d4ed8;--brand-soft:#eff6ff;--ok:#047857;--ok-soft:#ecfdf5;
-    --warn:#b45309;--warn-soft:#fffbeb;--danger:#b91c1c;--danger-soft:#fef2f2;
+    --bg:#f5f6f8;--panel:#fff;--ink:#111827;--ink2:#6b7280;--ink3:#9ca3af;
+    --line:#ebeef5;--line-warm:#efe8df;
+    --brand:#409eff;--brand-hover:#337ecc;--brand-soft:#ecf5ff;
+    --ok:#67c23a;--ok-soft:#f0f9eb;--ok-line:#e1f3d8;
+    --warn:#e6a23c;--warn-soft:#fdf6ec;--warn-line:#faecd8;
+    --danger:#f56c6c;--danger-soft:#fef0f0;--danger-line:#fde2e2;
+    --green-soft:#ecfdf5;--green-line:#a7f3d0;--green-ink:#065f46;
+    --radius:10px;
+    --sans:'PingFang SC','Microsoft YaHei','Helvetica Neue',Arial,sans-serif;
     --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-    --sans:system-ui,-apple-system,"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.7 var(--sans)}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.7 var(--sans)}
   .top{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
   .top .in{max-width:1180px;margin:0 auto;padding:12px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-  .brand{font-weight:700;letter-spacing:-.2px}
-  .brand span{color:var(--ink3);font-weight:500;font-size:13.5px;margin-left:8px}
+  .brand{font-weight:700;font-size:15px}
+  .brand span{color:var(--ink3);font-weight:400;font-size:13px;margin-left:8px}
   .tabs{display:flex;gap:6px;flex-wrap:wrap}
-  .tab{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 14px;font-size:13.5px;
+  .tab{border:1px solid var(--line);background:#fff;border-radius:6px;padding:6px 14px;font-size:13.5px;
        cursor:pointer;color:var(--ink2);font-family:var(--sans)}
+  .tab:hover{border-color:#c6e2ff;color:var(--brand)}
   .tab.on{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
   .stage{max-width:1180px;margin:0 auto;padding:18px;display:grid;gap:16px;grid-template-columns:1.55fr 1fr}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
-  .card h3{margin:0;padding:12px 16px;font-size:14px;border-bottom:1px solid var(--line);color:var(--ink);
-           display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  .card h3{margin:0;padding:12px 16px;font-size:14px;font-weight:600;border-bottom:1px solid var(--line);
+           display:flex;justify-content:space-between;align-items:center;gap:8px;background:#fafcff}
   .card h3 small{color:var(--ink3);font-weight:400;font-size:12.5px}
   .body{padding:16px}
-  .chat{height:520px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;background:#fbfbfc}
-  .bubble{max-width:86%;padding:10px 14px;border-radius:12px;font-size:14.5px;white-space:pre-wrap;word-break:break-word}
-  .u{align-self:flex-end;background:var(--brand);color:#fff;border-bottom-right-radius:4px}
-  .a{align-self:flex-start;background:#fff;border:1px solid var(--line);border-bottom-left-radius:4px}
-  .a.warn{border-color:#fcd34d;background:var(--warn-soft)}
-  .a.bad{border-color:#fecaca;background:var(--danger-soft)}
-  .cite{display:inline-block;font-size:11.5px;background:var(--brand-soft);color:var(--brand);
-        border:1px solid #c7d7fe;border-radius:5px;padding:0 5px;margin:0 2px;cursor:help;vertical-align:1px}
+  .chat{height:520px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;background:#fbfcfe}
+  .bubble{max-width:86%;padding:10px 14px;border-radius:8px;font-size:14px;white-space:pre-wrap;word-break:break-word}
+  .u{align-self:flex-end;background:var(--brand);color:#fff}
+  .a{align-self:flex-start;background:#fff;border:1px solid var(--line)}
+  .a.warn{border-color:var(--warn-line);background:var(--warn-soft)}
+  .a.bad{border-color:var(--danger-line);background:var(--danger-soft)}
+  .cite{display:inline-block;font-size:11.5px;background:var(--green-soft);color:var(--green-ink);
+        border:1px solid var(--green-line);border-radius:4px;padding:0 5px;margin:0 2px;cursor:help;vertical-align:1px}
   .sysnote{font-size:12.5px;color:var(--ink3);border-left:2px solid var(--line);padding-left:10px}
-  /* 问题清单：点选任意一条直接提问 */
-  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px;border-top:1px solid var(--line);background:#fcfcfd}
-  .chip{font-size:12.5px;border:1px solid var(--line);background:#fff;border-radius:999px;
+  .opts{margin-top:6px;font-size:12.5px;color:var(--brand)}
+  .why{margin-top:6px;font-size:12px;color:var(--ink3);border-top:1px dashed var(--line);padding-top:5px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px;border-top:1px solid var(--line);background:#fff}
+  .modes{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 16px;background:#fff;border-top:1px solid var(--line)}
+  .chip{font-size:12.5px;border:1px solid var(--line);background:#fff;border-radius:6px;
         padding:4px 11px;cursor:pointer;color:var(--ink2)}
-  .chip:hover{border-color:#c7d7fe;color:var(--brand)}
+  .chip:hover{border-color:#c6e2ff;color:var(--brand)}
   .chip.used{opacity:.45}
-  .chip.g{border-color:#fcd34d;background:var(--warn-soft);color:var(--warn)}
-  .chip.r{border-color:#fecaca;background:var(--danger-soft);color:var(--danger)}
-  .bar{display:flex;gap:10px;padding:12px 16px;border-top:1px solid var(--line);background:#fff;flex-wrap:wrap}
-  button.btn{border-radius:9px;padding:9px 16px;font-size:14px;cursor:pointer;font-family:var(--sans);
-             border:1px solid var(--line);background:#fff;color:var(--ink)}
+  .chip.g{border-color:var(--warn-line);background:var(--warn-soft);color:var(--warn)}
+  .chip.r{border-color:var(--danger-line);background:var(--danger-soft);color:var(--danger)}
+  .modes .chip.on{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
+  .modes .chip.on:hover{color:#fff}
+  .bar{display:flex;gap:10px;padding:12px 16px;border-top:1px solid var(--line);background:#fff;flex-wrap:wrap;align-items:center}
+  button.btn{border-radius:6px;padding:8px 16px;font-size:14px;cursor:pointer;font-family:var(--sans);
+             border:1px solid var(--line);background:#fff;color:var(--ink2)}
+  button.btn:hover{border-color:#c6e2ff;color:var(--brand)}
   button.btn.p{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
-  button.btn:disabled{opacity:.45;cursor:not-allowed}
-  /* 引擎视角 */
+  button.btn.p:hover{background:var(--brand-hover);color:#fff}
+  button.btn:disabled{opacity:.5;cursor:not-allowed}
   .ev{list-style:none;margin:0;padding:0;font-family:var(--mono);font-size:12.5px}
   .ev li{padding:5px 0;border-bottom:1px dashed var(--line);display:flex;gap:8px;align-items:baseline}
   .ev li:last-child{border-bottom:none}
   .ev .t{color:var(--ink3);min-width:62px}
   .k{font-family:var(--mono);font-size:12.5px;color:var(--ink2)}
-  .badge{font-size:11.5px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);background:#f9fafb;color:var(--ink2);white-space:nowrap}
-  .b-ok{background:var(--ok-soft);border-color:#a7f3d0;color:var(--ok)}
-  .b-warn{background:var(--warn-soft);border-color:#fcd34d;color:var(--warn)}
-  .b-b{background:var(--brand-soft);border-color:#c7d7fe;color:var(--brand)}
-  .b-bad{background:var(--danger-soft);border-color:#fecaca;color:var(--danger)}
+  .badge{font-size:11.5px;padding:1px 7px;border-radius:4px;border:1px solid var(--line);background:#f4f4f5;color:var(--ink2);white-space:nowrap}
+  .b-ok{background:var(--ok-soft);border-color:var(--ok-line);color:var(--ok)}
+  .b-warn{background:var(--warn-soft);border-color:var(--warn-line);color:var(--warn)}
+  .b-b{background:var(--brand-soft);border-color:#d9ecff;color:#337ecc}
+  .b-bad{background:var(--danger-soft);border-color:var(--danger-line);color:var(--danger)}
   .metric{display:flex;justify-content:space-between;font-size:13.5px;padding:5px 0;border-bottom:1px dashed var(--line)}
   .metric:last-child{border-bottom:none}
   .metric b{font-family:var(--mono);font-weight:600}
   .slots{display:grid;gap:6px}
-  .bubble.q{background:#fff}
-  .opts{margin-top:6px;font-size:12.5px;color:var(--brand)}
-  .why{margin-top:6px;font-size:12px;color:var(--ink3);border-top:1px dashed var(--line);padding-top:5px}
   .grp{margin-bottom:10px}
   .grp-t{font-size:12.5px;color:var(--ink);font-weight:600;margin-bottom:5px}
   .grp-hint{font-size:12px;color:var(--ink3)}
@@ -75,11 +83,12 @@
   .slot .nm{color:var(--ink2)}
   .slot .vl{font-size:12.5px;color:var(--ink);max-width:52%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .form label{display:block;font-size:13px;color:var(--ink2);margin:10px 0 4px}
-  .form input,.form textarea{width:100%;border:1px solid var(--line);border-radius:9px;padding:9px 11px;
+  .form input,.form textarea{width:100%;border:1px solid var(--line);border-radius:6px;padding:8px 11px;
        font:14px/1.6 var(--sans);color:var(--ink);background:#fff}
+  .form input:focus,.form textarea:focus{outline:none;border-color:var(--brand)}
   .form textarea{resize:vertical}
   .flash{animation:fl 1.1s ease-out}
-  @keyframes fl{0%{background:#fffbeb}100%{background:transparent}}
+  @keyframes fl{0%{background:#fdf6ec}100%{background:transparent}}
   .hint{font-size:12.5px;color:var(--ink3);margin:8px 0 0}
   .hide{display:none}
   @media (max-width:900px){
@@ -120,6 +129,11 @@
 
     <div id="pane1" class="body hide" style="padding:0">
       <div class="chat" id="chat1"></div>
+      <div class="modes" id="modes1">
+        <span class="chip on" data-mode="full">档案齐全（豆豆）</span>
+        <span class="chip" data-mode="none">新宠（无档案）</span>
+        <span class="hint" id="modeHint" style="margin-left:6px">档案四项由宠物档案带出，有值不问；缺失则作为必问项补问</span>
+      </div>
       <div class="bar">
         <button class="btn p" id="next1">宠主答一句 ▸</button>
         <button class="btn" id="submit1" disabled>确认提交给医生</button>
@@ -261,6 +275,62 @@ const S1 = [
 ];
 
 // 场景②：预问诊（AI 先开场 → 逐轮追问 → 结构化摘要 → 提交冻结）
+
+// 无档案版：「新宠首次就诊」—— 档案四项没有值，会作为必问项在后面轮次补问
+// 序列照抄实测（档案置空跑 10 轮）的提问顺序
+const S2_NOARCH = [
+  { who:'ai', opening:true, qs:[{ key:'chief', ask:'它主要是什么不舒服？大概从什么时候开始的？' }] },
+  { who:'owner', text:'我家狗从昨晚开始一直吐，吐了三四次，吐的是黄水带泡沫，精神也不太好',
+    fill:{ chief:'已明确' }, activate:'vomiting',
+    note:'命中关键词「吐」→ 激活呕吐分支，追加 6 个鉴别槽位' },
+  { who:'ai', qs:[
+      { key:'exposure', ask:'发病前 48 小时内，它有没有可能吃到不该吃的东西？比如剩饭菜、垃圾、植物、骨头' },
+      { key:'vomit_danger', ask:'还有一点要确认：肚子有没有明显胀大？有没有一直干呕却吐不出东西？',
+        options:['无上述情况','腹部胀大','持续干呕无物','不确定'] } ] },
+  { who:'owner', text:'没有乱吃东西，就正常吃狗粮；肚子不胀，就是干呕几下才吐',
+    fill:{ exposure:'已明确', vomit_danger:'已明确' } },
+  { who:'ai', qs:[{ key:'treatment', ask:'您给它用过什么药，或者做过什么处理吗？有没有效果？' }] },
+  { who:'owner', text:'没给药，就禁食了一顿，好像没好转', fill:{ treatment:'已明确' } },
+  { who:'ai', qs:[
+      { key:'onset', ask:'这个情况是突然出现的，还是慢慢变严重的？', options:['突然出现','逐渐加重','不确定'] },
+      { key:'vomit_content', ask:'呕吐物大概是什么样子？像没消化的食物、黄绿色液体、带血，还是咖啡渣样？',
+        options:['未消化食物','黄绿色液体','带血','咖啡渣样','白色泡沫','不确定'] } ] },
+  { who:'owner', text:'慢慢变严重的；吐的是黄绿色液体，有泡沫',
+    fill:{ onset:'已明确', vomit_content:'已明确' } },
+  { who:'ai', qs:[
+      { key:'vomit_relation', ask:'呕吐和吃饭有关系吗？吃完没多久就吐，还是空腹（比如早上）吐？',
+        options:['进食后不久','空腹时','与进食无关','不确定'] },
+      { key:'vomit_kind', ask:'它是用力干呕之后吐出来，还是没怎么用力就溢出来？',
+        options:['用力干呕后吐出','未用力即溢出','不确定'] } ] },
+  { who:'owner', text:'吃完没多久就吐；是先干呕几下才吐出来的',
+    fill:{ vomit_relation:'已明确', vomit_kind:'已明确' } },
+  { who:'ai', qs:[
+      { key:'vomit_freq', ask:'24 小时里大概吐了几次？', options:['1 次','2–3 次','4 次及以上'] },
+      { key:'medications', ask:'目前有在吃什么药吗？',
+        archiveAsk:true, why:'这件在用药：直接影响开药安全' } ] },
+  { who:'owner', text:'昨天到今天三四次；现在没有在吃药', fill:{ vomit_freq:'已明确', medications:'已明确' } },
+  { who:'ai', qs:[
+      { key:'allergy', ask:'有没有已知的过敏（药物、食物）？',
+        archiveAsk:true, why:'过敏史是用药安全红线' },
+      { key:'progression', ask:'这两天是越来越重，还是时好时坏？',
+        options:['逐渐加重','时好时坏','明显好转','不确定'] } ] },
+  { who:'owner', text:'没有发现过过敏；这两天越来越重', fill:{ allergy:'已明确', progression:'已明确' } },
+  { who:'ai', qs:[
+      { key:'vomit_associated', ask:'除了吐，有没有拉稀？精神和食欲怎么样？还能正常喝水吗？',
+        options:['无其他异常','精神食欲下降','不愿饮水','不确定'] },
+      { key:'vaccine', ask:'它最近的疫苗和驱虫是按时间做的吗？',
+        archiveAsk:true, why:'影响免疫安排' } ] },
+  { who:'owner', text:'没拉稀，精神差点、水喝得少；疫苗和驱虫都是按时做的',
+    fill:{ vomit_associated:'已明确', vaccine:'已明确' } },
+  { who:'ai', qs:[
+      { key:'past_disease', ask:'它以前得过什么病，或者做过手术吗？',
+        archiveAsk:true, why:'与现病和处置安排相关' },
+      { key:'free_note', ask:'还有什么想告诉医生的吗？任何您觉得重要的都可以说，没有也可以直接跳过。' } ] },
+  { who:'owner', text:'以前得过一次急性胃肠炎，没做过手术；它以前偶尔也吐，但这次连着吐',
+    fill:{ past_disease:'已明确' } },
+  { who:'ai', finish:true }
+];
+
 // 开场白与问句文案照抄后端（intake_flow.OPENING / rules/intake_slots.json 的 ask）
 const OPENING_TEXT =
 '您好，我是宠安医院的预问诊助手。医生会在诊前看到我帮您整理的情况 —— 这样您到院后能直接聊重点。\n\n' +
@@ -348,6 +418,24 @@ const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 let caseId = null;
 
+/* ---------- 串行闸门（对齐真实系统：生成期间不接受新输入）----------
+   Chat.vue: if (!text || streaming.value) return;
+   Intake.vue: :disabled="busy || finished"                       */
+let busy = false;
+function setBusy(on){
+  busy = on;
+  const ids = ['next0', 'reset0', 'send0', 'free0', 'next1', 'reset1', 'submit1', 'draftBtn', 'issueBtn', 'reset2'];
+  ids.forEach(id => { const el = document.getElementById(id); if (el) el.disabled = on; });
+  document.querySelectorAll('#chips0 .chip, #modes1 .chip').forEach(c => {
+    c.style.pointerEvents = on ? 'none' : '';
+    c.style.opacity = on ? '.5' : (c.classList.contains('used') ? '.45' : '');
+  });
+  document.querySelectorAll('#pane2 input, #pane2 textarea').forEach(el => { el.disabled = on; });
+}
+/** 生成期间若再触发，直接忽略（与真实前端同一语义） */
+function guard(){ return busy; }
+
+
 function setMetrics(rows){
   $('#metrics').innerHTML = rows.map(([k,v,cls]) =>
     `<div class="metric"><span>${k}</span><b class="${cls||''}">${v}</b></div>`).join('');
@@ -389,6 +477,16 @@ function verdict(b, text, cls){ const d = el('div','sysnote', text); d.style.mar
 let i1 = 0;            // 「下一句」的线性指针
 let asked = new Set();  // 实际问过的条目（点选与线性推进共用）
 async function ask(text){
+  if (guard()) return;            // 生成中不接受新提问
+  setBusy(true);
+  try {
+    await askInner(text);
+  } finally {
+    setBusy(false);
+    if (i1 >= S1.length) $('#next0').disabled = true;
+  }
+}
+async function askInner(text){
   bubble('#chat0','bubble u', text);
   const item = S1.find(x => x.q === text) || {
     kind:'rag',
@@ -447,6 +545,7 @@ function renderChips(){
     `<span class="chip ${asked.has(i) ? 'used' : ''} ${x.kind === 'guard' ? 'g' : x.kind === 'refuse' ? 'r' : ''}"
            data-i="${i}">${x.label || x.q}</span>`).join('');
   box.querySelectorAll('.chip').forEach(c => c.onclick = () => {
+    if (guard()) return;               // 生成中不响应点选
     const i = +c.dataset.i;
     if (asked.has(i)) return;               // 同一条不重复问
     asked.add(i);
@@ -458,6 +557,7 @@ function renderChips(){
   });
 }
 $('#next0').onclick = async () => {
+  if (guard()) return;
   if (i1 >= S1.length){ logEv('—','脚本结束','可重置或自由输入'); return; }
   const item = S1[i1];
   asked.add(i1);
@@ -468,12 +568,15 @@ $('#next0').onclick = async () => {
 };
 $('#reset0').onclick = () => { $('#next0').disabled = false; reset1(); };
 $('#send0').onclick = async () => {
+  if (guard()) return;
   const v = $('#free0').value.trim(); if (!v) return; $('#free0').value='';
   $('#next0').disabled = true; await ask(v);
 };
 
 /* ============================ 场景② 预问诊 ============================ */
 let slots = {};
+let archiveMode = 'full';        // full=档案齐全（豆豆） | none=新宠（无档案）
+let S2_ACTIVE = [];             // 当前模式对应的脚本
 function renderSlots(){
   const branchOn = !!slots.__branch;
   const rows = SLOT_GROUPS.map(g => {
@@ -498,13 +601,18 @@ function renderSlots(){
   setMetrics([['槽位进度', filled + ' / ' + total, filled === total ? 'b-ok' : ''],
               ['已答轮次', String(round)],
               ['分支', branchOn ? '呕吐（已激活）' : '未激活', branchOn ? 'b-b' : ''],
-              ['档案预填', '4 项（疫苗 / 既往 / 用药 / 过敏）', 'b-b'],
+              ['档案预填', archiveMode === 'none' ? '无档案（四项必问）' : '4 项（疫苗 / 既往 / 用药 / 过敏）', archiveMode === 'none' ? 'b-warn' : 'b-b'],
               ['急症中断', '未触发', 'b-ok']]);
 }
 let step = 0, round = 0;
 $('#next1').onclick = async () => {
-  if (step >= S2.length) return;
-  const it = S2[step++];
+  if (guard()) return;
+  setBusy(true);
+  try { await nextIntake(); } finally { setBusy(false); if (step >= S2_ACTIVE.length) $('#next1').disabled = true; }
+};
+async function nextIntake(){
+  if (step >= S2_ACTIVE.length) return;
+  const it = S2_ACTIVE[step++];
   if (it.who === 'ai'){
     // AI 轮：开场白 + 本轮追问（真实系统一次返回 message + questions）
     const b = bubble('#chat1', 'bubble a', '');
@@ -540,7 +648,7 @@ $('#next1').onclick = async () => {
     if (it.activate) logEv('—', 'branch_activate', '「吐」→ vomiting 分支 +6 槽位');
     renderSlots();
   }
-  $('#next1').disabled = step >= S2.length;
+  $('#next1').disabled = step >= S2_ACTIVE.length;
   renderSlots();
 };
 $('#submit1').onclick = () => {
@@ -551,7 +659,9 @@ $('#submit1').onclick = () => {
 // 重置 = 重新进入会话：清空状态后由 AI 重新发开场（与进入场景的行为一致）
 function resetIntake(autoOpen){
   step = 0; round = 0;
-  slots = { vaccine:'已明确', past_disease:'已明确', medications:'已明确', allergy:'已明确' };   // 档案槽位有值就不问
+  S2_ACTIVE = archiveMode === 'none' ? S2_NOARCH : S2;
+  slots = archiveMode === 'none' ? {} : { vaccine:'已明确', past_disease:'已明确', medications:'已明确', allergy:'已明确' };
+  document.querySelectorAll('#modes1 .chip').forEach(c => c.classList.toggle('on', c.dataset.mode === archiveMode));
   clearEv(); setMetrics([]); $('#chat1').innerHTML = '';
   $('#submit1').disabled = true; $('#next1').disabled = false;
   renderSlots();
@@ -564,7 +674,11 @@ async function typing(node, text){
   node.value = ''; for (const ch of text){ node.value += ch; if (node.value.length % 3 === 0) await sleep(8); }
 }
 $('#draftBtn').onclick = async () => {
-  $('#draftBtn').disabled = true;
+  if (guard()) return;
+  setBusy(true);
+  try { await draftInner(); } finally { setBusy(false); }
+};
+async function draftInner(){
   logEv('+0 ms','RECORD_DRAFT','归属校验（接诊医生）→ 起草即审计');
   await sleep(200);
   logEv('+180 ms','POST /api/record/draft','Agent 起草（白名单解析）');
@@ -612,6 +726,11 @@ function showScene(n){
   if (n===2) $('#reset2').click();
 }
 document.querySelectorAll('.tab').forEach(t => t.onclick = () => showScene(+t.dataset.scene));
+
+document.querySelectorAll('#modes1 .chip').forEach(c => c.onclick = () => {
+  archiveMode = c.dataset.mode;
+  resetIntake(true);     // 切换即重新进入会话：AI 先发开场
+});
 
 /* 初始 */
 reset1();
