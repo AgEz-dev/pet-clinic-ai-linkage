@@ -124,14 +124,16 @@
     padding: 2px 9px; cursor: pointer; color: var(--ink2); }
   .act:hover { border-color: #c6e2ff; color: var(--brand); }
 
-  /* ── 消息角色头像（对齐需求截图）── */
-  .msg-row { display: flex; gap: 9px; max-width: 100%; }
+  /* ── 消息角色头像（对齐系统原型设计）── */
+  .msg-row { display: flex; gap: 9px; max-width: 100%; align-items: flex-start; }
   .msg-row.right { justify-content: flex-end; }
   .msg-row.left { justify-content: flex-start; }
+  .msg-row.center { justify-content: center; }
   .msg-ava { width: 30px; height: 30px; border-radius: 50%; flex: 0 0 auto; margin-top: 2px;
-    display: flex; align-items: center; justify-content: center;
-    background: #ecfdf5; border: 1.5px solid #6ee7b7;
-    font-size: 11px; font-weight: 700; color: #065f46; }
+    display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+  .msg-ava.ai { background: #d8f5e8; border: 1.5px solid #6ee7b7; overflow: hidden; }
+  .msg-ava.ai img { width: 100%; height: 100%; object-fit: cover; mix-blend-mode: multiply; }
+  .msg-ava.me { background: #ecf5ff; border: 1.5px solid #b3d8ff; color: #337ecc; }
   .msg-row .bubble { max-width: 76%; }
   .msg-row.right .bubble { border-top-right-radius: 3px; }
   .msg-row.left .bubble { border-top-left-radius: 3px; }
@@ -491,14 +493,38 @@ function logEv(t, name, detail){
 }
 function clearEv(){ $('#evlog').innerHTML = ''; }
 function bubble(pane, cls, txt){
+  const isSysnote = cls.includes('sysnote');
+  if (isSysnote) {
+    const row = el('div', 'msg-row center');
+    const b = el('div', 'bubble ' + cls, txt);
+    row.appendChild(b);
+    $(pane).appendChild(row);
+    $(pane).scrollTop = 1e5;
+    return b;
+  }
   const isUser = cls.endsWith(' u') || cls === 'u';
-  const who = isUser ? '宠主' : '助手';
-  const row = el('div','msg-row ' + (isUser ? 'right' : 'left'));
-  const av = el('div','msg-ava', who);
-  const b = el('div','bubble '+cls, txt);
-  row.appendChild(av); row.appendChild(b);
+  const row = el('div', 'msg-row ' + (isUser ? 'right' : 'left'));
+  const av = el('div', 'msg-ava ' + (isUser ? 'me' : 'ai'));
+  if (isUser) {
+    av.textContent = '宠主';
+  } else {
+    const img = el('img');
+    const headLogo = document.querySelector('.ai-logo img');
+    img.src = headLogo ? headLogo.src : '';
+    img.alt = '助手';
+    av.appendChild(img);
+  }
+  const b = el('div', 'bubble ' + cls, txt);
+  if (isUser) {
+    row.appendChild(b);
+    row.appendChild(av);
+  } else {
+    row.appendChild(av);
+    row.appendChild(b);
+  }
   $(pane).appendChild(row);
-  $(pane).scrollTop = 1e5; return b;
+  $(pane).scrollTop = 1e5;
+  return b;
 }
 /* 逐字流式（模拟 token 帧） */
 async function stream(b, text, onTick){
@@ -684,9 +710,12 @@ async function nextIntake(){
   const it = S2_ACTIVE[step++];
   if (it.who === 'ai'){
     // AI 轮：开场白 + 本轮追问（真实系统一次返回 message + questions）
-    const b = bubble('#chat1', 'bubble a', '');
     if (it.opening){
+      const b = bubble('#chat1', 'bubble a', '');
       await stream(b, OPENING_TEXT);
+    } else if (it.message){
+      const b = bubble('#chat1', 'bubble a', '');
+      await stream(b, it.message);
     }
     for (const q of (it.qs || [])){
       await sleep(220);
@@ -767,7 +796,6 @@ async function draftInner(){
 $('#issueBtn').onclick = () => {
   if (!$('#fA').value.trim()){ $('#fA').classList.add('flash'); $('#fA').placeholder='请填写确诊结论（AI 不代填）'; return; }
   logEv('—','POST /medical-record/create','医生出具 → 事务内落库 + 健康画像刷新');
-  bubble('#chat1','bubble sysnote','');
   setMetrics([['草稿来源','AI 起草 + 医生核对','b-b'],['确诊','医生填写','b-ok'],
               ['病历状态','已出具','b-ok'],['接诊','已完成','b-ok'],['审计','RECORD_CREATE ✓','b-ok']]);
   const tip = $('#draftTip');
