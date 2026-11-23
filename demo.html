@@ -506,7 +506,7 @@ function bubble(pane, cls, txt){
   const row = el('div', 'msg-row ' + (isUser ? 'right' : 'left'));
   const av = el('div', 'msg-ava ' + (isUser ? 'me' : 'ai'));
   if (isUser) {
-    av.textContent = '宠主';
+    av.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
   } else {
     const img = el('img');
     const headLogo = document.querySelector('.ai-logo img');
