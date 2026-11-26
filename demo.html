@@ -60,7 +60,8 @@
   .modes .chip.on:hover{color:#fff}
   .bar{display:flex;gap:10px;padding:12px 16px;border-top:1px solid var(--line);background:#fff;flex-wrap:wrap;align-items:center}
   button.btn{border-radius:6px;padding:8px 16px;font-size:14px;cursor:pointer;font-family:var(--sans);
-             border:1px solid var(--line);background:#fff;color:var(--ink2)}
+             border:1px solid var(--line);background:#fff;color:var(--ink2);white-space:nowrap}
+  button.btn.small{padding:4px 10px;font-size:12.5px}
   button.btn:hover{border-color:#c6e2ff;color:var(--brand)}
   button.btn.p{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
   button.btn.p:hover{background:var(--brand-hover);color:#fff}
@@ -107,10 +108,10 @@
   .ai-logo { width: 32px; height: 32px; border-radius: 50%; overflow: hidden; flex: 0 0 auto;
     background: #d8f5e8; border: 1.5px solid #6ee7b7; }
   .ai-logo img { width: 100%; height: 100%; object-fit: cover; mix-blend-mode: multiply; }
-  .ai-name { font-weight: 700; font-size: 14.5px; display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+  .ai-name { font-weight: 700; font-size: 14.5px; display: flex; align-items: baseline; gap: 8px; min-width: 0; flex: 1; white-space: nowrap; }
   .ai-name small { font-weight: 400; font-size: 11.5px; color: var(--ink3); white-space: nowrap;
-    overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
-  .head-right { margin-left: auto; }
+    overflow: hidden; text-overflow: ellipsis; max-width: 220px; min-width: 0; }
+  .head-right { margin-left: auto; flex: 0 0 auto; }
   .empty-state { text-align: center; padding: 30px 16px; margin: auto; }
   .empty-state .es-desc { font-size: 13px; color: var(--ink3); margin: 10px 0 14px; }
   .esugs { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
@@ -144,11 +145,13 @@
 
 <div class="top">
   <div class="in">
-    <div class="brand">宠安康 · AI 助手可交互演示<span>VetClaw 联动 · 分诊问答 / 预问诊 / 病历起草</span></div>
+    <div class="brand">宠安康 · 全栈业务 &amp; AI 可交互演示<span>业务闭环 + VetClaw 联动 · 5 个核心场景</span></div>
     <div class="tabs">
       <button class="tab on" data-scene="0">① 分诊问答</button>
       <button class="tab" data-scene="1">② 预问诊</button>
       <button class="tab" data-scene="2">③ 病历起草</button>
+      <button class="tab" data-scene="3">④ 处方硬闸门与发药</button>
+      <button class="tab" data-scene="4">⑤ 疫苗预警与进销存</button>
     </div>
   </div>
 </div>
@@ -205,6 +208,69 @@
       <div class="bar">
         <button class="btn p" id="issueBtn">出具病历并完成接诊</button>
         <button class="btn" id="reset2">重置</button>
+      </div>
+    </div>
+
+    <div id="pane3" class="body hide" style="padding:0">
+      <div class="disclaim" style="background:#ecf5ff;border-color:#d9ecff;color:#337ecc">
+        业务系统硬规则 + VetClaw DDI 审查联动：高危配伍禁止提交（BLOCK），超量预警需医生签署临床理由（WARN / HITL），发药采用数据库行级乐观锁。
+      </div>
+      <div class="body" style="padding:16px">
+        <div class="grp-t">选择处方组合场景（一键模拟医生开方）：</div>
+        <div class="chips" style="padding:8px 0 0;border-top:none" id="rxChips">
+          <span class="chip r" data-rx="block">高危配伍：头孢唑林钠 + 恩诺沙星（BLOCK）</span>
+          <span class="chip g" data-rx="warn">超量预警：阿莫西林克拉维酸钾 × 2.5倍（WARN）</span>
+          <span class="chip" data-rx="ok">合规单药：速诺阿莫西林片 50mg × 2盒（PASS）</span>
+        </div>
+
+        <div id="rxAlert" class="sysnote" style="margin-top:14px;display:none"></div>
+
+        <div id="rxHitlBox" style="margin-top:12px;display:none">
+          <label style="display:block;font-size:13px;color:var(--ink2);margin-bottom:4px">HITL 临床放行理由（WARN 必填留痕）</label>
+          <input id="rxReason" value="重症急性细菌感染，经体重复核后短期冲击给药并监测肾功" style="width:100%;border:1px solid var(--line);border-radius:6px;padding:8px 11px;font:13.5px var(--sans)">
+        </div>
+
+        <div style="margin-top:16px">
+          <div class="grp-t">药房库存实时账本（当前在库）：</div>
+          <div id="drugStockList" style="border:1px solid var(--line);border-radius:8px;padding:10px 14px;background:#fafcff;margin-top:6px"></div>
+        </div>
+      </div>
+      <div class="bar">
+        <button class="btn p" id="rxSubmitBtn" disabled>提交处方并药房乐观锁发药</button>
+        <button class="btn" id="rxRaceBtn">模拟双线程并发发药冲突</button>
+        <button class="btn" id="reset3">重置演示</button>
+      </div>
+    </div>
+
+    <div id="pane4" class="body hide" style="padding:0">
+      <div class="disclaim" style="background:var(--green-soft);border-color:var(--green-line);color:var(--green-ink)">
+        自动预警常驻调度器：已开启（每日凌晨 02:00 自动巡检，30 天临期与逾期分阶段防骚扰去重推送）
+      </div>
+      <div class="body" style="padding:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+          <div class="grp-t" style="margin:0">① 全院疫苗分级预警与幂等批量催办</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn" id="vacScanBtn" style="padding:5px 12px;font-size:12.5px">立即执行自动巡检扫描</button>
+            <button class="btn p" id="vacBatchBtn" style="padding:5px 12px;font-size:12.5px">批量发送提醒 (<span id="vacSelCnt">2</span>)</button>
+          </div>
+        </div>
+        <div id="vacTableBox" style="border:1px solid var(--line);border-radius:8px;overflow:hidden"></div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin:18px 0 10px">
+          <div class="grp-t" style="margin:0">② 药品进销存动态分页与防 OOM 边界拦截</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            <input id="invSearch" placeholder="按通用名过滤（如 阿莫西林）" style="border:1px solid var(--line);border-radius:6px;padding:4px 9px;font:12.5px var(--sans);width:205px">
+            <button class="btn" id="invOomBtn" style="padding:4px 10px;font-size:12px">恶意传 size=999999</button>
+          </div>
+        </div>
+        <div id="invTableBox" style="border:1px solid var(--line);border-radius:8px;overflow:hidden"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:12.5px;color:var(--ink2)">
+          <span id="invPageInfo"></span>
+          <div style="display:flex;gap:6px">
+            <button class="btn" id="invPrev" style="padding:3px 10px;font-size:12px">上一页</button>
+            <button class="btn" id="invNext" style="padding:3px 10px;font-size:12px">下一页</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -466,6 +532,7 @@ let caseId = null;
    Chat.vue: if (!text || streaming.value) return;
    Intake.vue: :disabled="busy || finished"                       */
 let busy = false;
+let sceneGen = 0;
 function setBusy(on){
   busy = on;
   const ids = ['next0', 'reset0', 'send0', 'free0', 'next1', 'reset1', 'submit1', 'draftBtn', 'issueBtn', 'reset2'];
@@ -527,9 +594,10 @@ function bubble(pane, cls, txt){
   return b;
 }
 /* 逐字流式（模拟 token 帧） */
-async function stream(b, text, onTick){
+async function stream(b, text, onTick, gen){
   b.textContent = ''; let n = 0; let acc = '';
   for (const ch of text){
+    if (gen !== undefined && gen !== sceneGen) return n;
     acc += ch; b.textContent = acc + '▌'; n++;
     if (onTick && n % 3 === 0) onTick(n);
     if (n % 2 === 0) await sleep(6);
@@ -562,6 +630,7 @@ async function ask(text){
   }
 }
 async function askInner(text){
+  const gen = sceneGen;
   const es = document.querySelector('#chat0 .empty-state'); if (es) es.remove();
   bubble('#chat0','bubble u', text);
   addTs('#chat0', 'r');
@@ -577,35 +646,35 @@ async function askInner(text){
   }
   if (item.kind === 'guard'){
     logEv('+0.4 ms','thought','stage=thinking');
-    await sleep(120);
+    await sleep(120); if (gen !== sceneGen) return;
     logEv('+1.4 ms','guard_hit','P0 toxin matched → 短路');
     logEv('+1.4 ms','done','零 LLM 调用');
     setMetrics([['TTFB', item.ttfb, 'b-warn'],['总帧数','1'],['LLM 调用','0','b-ok'],['降级档位','未触发']]);
     const b = bubble('#chat0','bubble a warn','');
-    await stream(b, item.answer);
+    await stream(b, item.answer, null, gen); if (gen !== sceneGen) return;
     verdict(b,'⚠️ 规则守卫命中：不走模型、不检索、不排队 —— 这是"急症快"的来源。',null);
     return;
   }
   if (item.kind === 'refuse'){
     logEv('+0.3 ms','thought');
-    await sleep(100);
+    await sleep(100); if (gen !== sceneGen) return;
     logEv('+1.0 ms','refuse_hit','超范围用药 → 拒答');
     logEv('+1.0 ms','done','零 LLM 调用');
     setMetrics([['TTFB', item.ttfb, 'b-warn'],['总帧数','1'],['LLM 调用','0','b-ok'],['降级档位','未触发']]);
     const b = bubble('#chat0','bubble a bad','');
-    await stream(b, item.answer);
+    await stream(b, item.answer, null, gen); if (gen !== sceneGen) return;
     verdict(b,'🔒 拒答也是能力：宁可让医生接管，也不凭空给药量。',null);
     return;
   }
   // RAG 路径
   logEv('+0 ms','thought','stage=thinking');
-  await sleep(150);
+  await sleep(150); if (gen !== sceneGen) return;
   logEv('+120 ms','tool_call','search_knowledge_base');
-  await sleep(220);
+  await sleep(220); if (gen !== sceneGen) return;
   logEv('+340 ms','tool_result','2 chunks（bge-small-zh + BM25 融合）');
   const b = bubble('#chat0','bubble a','');
   let frames = 0;
-  await stream(b, item.answer, n => { frames = n; });
+  await stream(b, item.answer, n => { frames = n; }, gen); if (gen !== sceneGen) return;
   logEv('+372 ms','token', '× ' + item.frames);
   logEv('+1.9 s','done','citations=2');
   setMetrics([['TTFB','372 ms'],['总帧数',String(item.frames)],['LLM 调用','2'],['降级档位','未触发','b-ok']]);
@@ -706,21 +775,22 @@ $('#next1').onclick = async () => {
   try { await nextIntake(); } finally { setBusy(false); if (step >= S2_ACTIVE.length) $('#next1').disabled = true; }
 };
 async function nextIntake(){
+  const gen = sceneGen;
   if (step >= S2_ACTIVE.length) return;
   const it = S2_ACTIVE[step++];
   if (it.who === 'ai'){
     // AI 轮：开场白 + 本轮追问（真实系统一次返回 message + questions）
     if (it.opening){
       const b = bubble('#chat1', 'bubble a', '');
-      await stream(b, OPENING_TEXT);
+      await stream(b, OPENING_TEXT, null, gen); if (gen !== sceneGen) return;
     } else if (it.message){
       const b = bubble('#chat1', 'bubble a', '');
-      await stream(b, it.message);
+      await stream(b, it.message, null, gen); if (gen !== sceneGen) return;
     }
     for (const q of (it.qs || [])){
-      await sleep(220);
+      await sleep(220); if (gen !== sceneGen) return;
       const qb = bubble('#chat1', 'bubble a q', '');
-      await stream(qb, q.ask);
+      await stream(qb, q.ask, null, gen); if (gen !== sceneGen) return;
       if (q.options) qb.appendChild(el('div', 'opts', q.options.join(' ／ ')));
       if (SLOT_WHY[q.key]) qb.appendChild(el('div', 'why', '〔为什么这么问〕' + SLOT_WHY[q.key]));
       logEv('—', 'ask', q.key + '（' + (SLOT_NAMES[q.key] || '') + '）');
@@ -738,7 +808,7 @@ async function nextIntake(){
     // 宠主轮：回答 + 槽位变化（可能激活分支）
     bubble('#chat1', 'bubble u', it.text);
     logEv('+' + (120 + Math.random() * 120 | 0) + ' ms', 'intake_turn', '规则抽结构化槽位');
-    await sleep(260);
+    await sleep(260); if (gen !== sceneGen) return;
     logEv('+' + (180 + Math.random() * 180 | 0) + ' ms', 'llm_extract', '自由文本槽位（宁缺勿编）');
     round++;                                   // 每答一轮计一次
     if (it.activate) slots.__branch = true;
@@ -756,6 +826,7 @@ $('#submit1').onclick = () => {
 };
 // 重置 = 重新进入会话：清空状态后由 AI 重新发开场（与进入场景的行为一致）
 function resetIntake(autoOpen){
+  sceneGen++; setBusy(false);
   step = 0; round = 0;
   S2_ACTIVE = archiveMode === 'none' ? S2_NOARCH : S2;
   slots = archiveMode === 'none' ? {} : { vaccine:'已明确', past_disease:'已明确', medications:'已明确', allergy:'已明确' };
@@ -768,8 +839,8 @@ function resetIntake(autoOpen){
 $('#reset1').onclick = () => resetIntake(true);
 
 /* ============================ 场景③ 病历起草 ============================ */
-async function typing(node, text){
-  node.value = ''; for (const ch of text){ node.value += ch; if (node.value.length % 3 === 0) await sleep(8); }
+async function typing(node, text, gen){
+  node.value = ''; for (const ch of text){ if (gen !== undefined && gen !== sceneGen) return; node.value += ch; if (node.value.length % 3 === 0) await sleep(8); }
 }
 $('#draftBtn').onclick = async () => {
   if (guard()) return;
@@ -777,13 +848,14 @@ $('#draftBtn').onclick = async () => {
   try { await draftInner(); } finally { setBusy(false); }
 };
 async function draftInner(){
+  const gen = sceneGen;
   logEv('+0 ms','RECORD_DRAFT','归属校验（接诊医生）→ 起草即审计');
-  await sleep(200);
+  await sleep(200); if (gen !== sceneGen) return;
   logEv('+180 ms','POST /api/record/draft','Agent 起草（白名单解析）');
-  await sleep(300);
-  await typing($('#fS'), DRAFT.s);
-  await typing($('#fO'), DRAFT.o);
-  await typing($('#fP'), DRAFT.p);
+  await sleep(300); if (gen !== sceneGen) return;
+  await typing($('#fS'), DRAFT.s, gen); if (gen !== sceneGen) return;
+  await typing($('#fO'), DRAFT.o, gen); if (gen !== sceneGen) return;
+  await typing($('#fP'), DRAFT.p, gen); if (gen !== sceneGen) return;
   logEv('+2.4 s','sanitize','丢弃 diagnosis 等白名单外字段 ✓');
   $('#aTag').textContent = '留白：由医生填写';
   $('#aTag').className = 'badge b-warn';
@@ -806,21 +878,190 @@ $('#reset2').onclick = () => { ['#fS','#fO','#fP','#fA'].forEach(s => $(s).value
   $('#fA').placeholder = '请医生填写临床诊断结论'; $('#draftBtn').disabled = false; clearEv();
   $('#draftTip').textContent = 'AI 起草主诉 / 建议查体 / 医嘱草稿；确诊与处方由医生填写'; setMetrics([]); };
 
+/* ============================ 场景④ 处方硬闸门与药房乐观锁 ============================ */
+let rxMode = null;
+const rxStockInit = () => ({
+  cefazolin: { name:'头孢唑林钠注射液 0.5g', stock: 28, ver: 12, unit:'支' },
+  enro:      { name:'恩诺沙星注射液 50mg', stock: 19, ver: 7,  unit:'支' },
+  synulox:   { name:'速诺阿莫西林克拉维酸钾片 50mg', stock: 42, ver: 31, unit:'盒' }
+});
+let rxStock = rxStockInit();
+
+function renderDrugStock(){
+  const box = $('#drugStockList');
+  if (!box) return;
+  box.innerHTML = Object.values(rxStock).map(d =>
+    `<div class="metric"><span>${d.name} <small class="k">(v${d.ver})</small></span><b>${d.stock} ${d.unit}</b></div>`
+  ).join('');
+}
+
+function selectRx(mode){
+  rxMode = mode;
+  document.querySelectorAll('#rxChips .chip').forEach(c => c.classList.toggle('used', c.dataset.rx !== mode));
+  const al = $('#rxAlert'), hitl = $('#rxHitlBox'), btn = $('#rxSubmitBtn');
+  al.style.display = 'block';
+  if (mode === 'block'){
+    al.style.cssText = 'margin-top:14px;padding:10px 12px;border-radius:8px;border:1px solid var(--danger-line);background:var(--danger-soft);color:#b91c1c;font-size:13px';
+    al.innerHTML = '<b>⛔ 【高危配伍禁忌 · BLOCK 阻断】</b><br>头孢唑林钠水溶液（偏酸）与恩诺沙星（偏碱）混合会发生酸碱中和沉淀，产生微细晶体引发血管栓塞风险！发药与提交按钮已物理级锁死。';
+    hitl.style.display = 'none';
+    btn.disabled = true;
+    logEv('+2 ms', 'DDI_BLOCK', '拦截高危配伍：头孢唑林钠 + 恩诺沙星（HTTP 422）');
+    setMetrics([['规则引擎', 'DDI 硬闸门触发', 'b-bad'], ['决策级别', 'BLOCK（物理锁死）', 'b-bad'],
+      ['溯源块', 'ddi_compatibility#14', 'b-b'], ['库存扣减', '0（未放行）', 'b-ok']]);
+  } else if (mode === 'warn'){
+    al.style.cssText = 'margin-top:14px;padding:10px 12px;border-radius:8px;border:1px solid var(--warn-line);background:var(--warn-soft);color:#b45309;font-size:13px';
+    al.innerHTML = '<b>⚠ 【剂量越界预警 · WARN】</b><br>当前单次剂量超过犬常规上限 1.8×，需执业兽医实名填写临床放行理由（HITL 人工在环留痕）后方可继续发药。';
+    hitl.style.display = 'block';
+    btn.disabled = false;
+    logEv('+4 ms', 'DOSE_WARN', '触发 WARN 预警 → 等待 HITL 临床理由签字');
+    setMetrics([['规则引擎', '剂量超限阈值', 'b-warn'], ['决策级别', 'WARN（HITL 留痕）', 'b-warn'],
+      ['强制字段', 'clinical_reason', 'b-b'], ['当前状态', '待医生签字放行', 'b-warn']]);
+  } else {
+    al.style.cssText = 'margin-top:14px;padding:10px 12px;border-radius:8px;border:1px solid var(--ok-line);background:var(--ok-soft);color:#047857;font-size:13px';
+    al.innerHTML = '<b>✓ 【处方审查通过 · PASS】</b><br>未检出配伍禁忌或超量风险，允许提交并扣减药房在库数量（2 盒）。';
+    hitl.style.display = 'none';
+    btn.disabled = false;
+    logEv('+2 ms', 'RX_PASS', 'DDI & 剂量审查全通过 → 就绪待发药');
+    setMetrics([['规则引擎', '配伍/物种全通过', 'b-ok'], ['决策级别', 'PASS', 'b-ok'],
+      ['拟扣减药品', '速诺阿莫西林 × 2 盒', 'b-b'], ['锁机制', '行级乐观锁 version', 'b-ok']]);
+  }
+}
+
+document.querySelectorAll('#rxChips .chip').forEach(c => c.onclick = () => selectRx(c.dataset.rx));
+$('#rxSubmitBtn').onclick = () => {
+  if (!rxMode || rxMode === 'block') return;
+  if (rxMode === 'warn' && !$('#rxReason').value.trim()){ $('#rxReason').focus(); return; }
+  if (rxStock.synulox.stock < 2){
+    logEv('—', 'OUT_OF_STOCK', '库存不足，事务整体回滚');
+    return;
+  }
+  const oldV = rxStock.synulox.ver;
+  rxStock.synulox.stock -= 2;
+  rxStock.synulox.ver += 1;
+  renderDrugStock();
+  logEv('+11 ms', 'SQL_OPT_LOCK', `UPDATE sys_drug SET stock=stock-2, version=${rxStock.synulox.ver} WHERE id=3 AND version=${oldV} → 1 row`);
+  if (rxMode === 'warn') logEv('+14 ms', 'AUDIT_HITL', `已留痕放行理由：${$('#rxReason').value.slice(0,22)}...`);
+  setMetrics([['事务提交', '1 行更新成功', 'b-ok'], ['乐观锁版本', `v${oldV} → v${rxStock.synulox.ver}`, 'b-ok'],
+    ['剩余库存', `${rxStock.synulox.stock} 盒`, 'b-b'], ['审计留痕', rxMode === 'warn' ? 'HITL_WARN ✓' : 'DISPENSE ✓', 'b-ok']]);
+};
+$('#rxRaceBtn').onclick = () => {
+  if (rxStock.synulox.stock < 2) rxStock = rxStockInit();
+  const oldV = rxStock.synulox.ver;
+  rxStock.synulox.stock -= 2;
+  rxStock.synulox.ver += 1;
+  renderDrugStock();
+  logEv('+0 ms', 'CONCURRENT_T1', `线程 A 读取 version=${oldV} → 扣减 2 盒提交成功 (v${rxStock.synulox.ver})`);
+  logEv('+3 ms', 'CONCURRENT_T2', `线程 B 携带旧 version=${oldV} 更新 → affected=0，触发乐观锁冲突拦截 ✓`);
+  setMetrics([['并发请求数', '2 线程同秒发药', 'b-b'], ['线程 A 结果', '扣减成功 (1 row)', 'b-ok'],
+    ['线程 B 结果', '乐观锁版本过期拦截', 'b-warn'], ['库存防超扣', '已拦截（无负库存）', 'b-ok']]);
+};
+$('#reset3').onclick = () => {
+  rxMode = null; rxStock = rxStockInit(); renderDrugStock();
+  $('#rxAlert').style.display = 'none'; $('#rxHitlBox').style.display = 'none';
+  $('#rxSubmitBtn').disabled = true;
+  document.querySelectorAll('#rxChips .chip').forEach(c => c.classList.remove('used'));
+  clearEv(); setMetrics([['当前状态', '待选择处方组合', 'b-b']]);
+};
+
+/* ============================ 场景⑤ 疫苗预警与进销存分页 ============================ */
+let vacList = [
+  { id: 1, pet: '皮皮（柯基）', vac: '狂犬病灭活疫苗', due: '2026-11-20', state: '逾期 5 天', cls: 'b-bad', checked: true, remindedToday: false },
+  { id: 2, pet: '咪咪（英短）', vac: '妙三多（猫三联）', due: '2026-12-01', state: '临期 6 天', cls: 'b-warn', checked: true, remindedToday: false },
+  { id: 3, pet: '豆豆（金毛）', vac: '卫佳捌（犬八联）', due: '2026-12-03', state: '临期 8 天', cls: 'b-warn', checked: false, remindedToday: true }
+];
+const INV_DATA = [
+  { name: '速诺阿莫西林克拉维酸钾片', spec: '50mg*10片', stock: 42, ctrl: '普通' },
+  { name: '头孢唑林钠注射液', spec: '0.5g/支', stock: 28, ctrl: '普通' },
+  { name: '恩诺沙星注射液', spec: '50mg/支', stock: 19, ctrl: '普通' },
+  { name: '丙泊酚乳状注射液', spec: '20ml:0.2g', stock: 8, ctrl: '麻精管制' },
+  { name: '阿莫西林可溶性粉', spec: '100g/袋', stock: 65, ctrl: '普通' },
+  { name: '布托啡诺注射液', spec: '10mg/ml', stock: 6, ctrl: '麻精管制' },
+  { name: '莫匹罗星软膏', spec: '5g/支', stock: 34, ctrl: '普通' },
+  { name: '拜宠清驱虫片', spec: '4粒/盒', stock: 51, ctrl: '普通' }
+];
+let invPage = 1, invSize = 4, invKw = '';
+
+function renderVacTable(){
+  const box = $('#vacTableBox');
+  if (!box) return;
+  const rows = vacList.map((v, i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);font-size:13px">
+      <input type="checkbox" data-vi="${i}" ${v.checked ? 'checked' : ''}>
+      <span style="flex:1"><b>${v.pet}</b> · ${v.vac}</span>
+      <span class="badge ${v.cls}">${v.state}</span>
+      <span class="badge ${v.remindedToday ? 'b-ok' : ''}">${v.remindedToday ? '今日已催办' : '未催办'}</span>
+    </div>`).join('');
+  box.innerHTML = rows;
+  box.querySelectorAll('input[type=checkbox]').forEach(cb => {
+    cb.onchange = () => {
+      vacList[+cb.dataset.vi].checked = cb.checked;
+      $('#vacSelCnt').textContent = vacList.filter(x => x.checked).length;
+    };
+  });
+  $('#vacSelCnt').textContent = vacList.filter(x => x.checked).length;
+}
+
+function renderInvTable(){
+  const box = $('#invTableBox');
+  if (!box) return;
+  const filtered = INV_DATA.filter(d => !invKw || d.name.includes(invKw));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / invSize));
+  if (invPage > totalPages) invPage = totalPages;
+  const start = (invPage - 1) * invSize;
+  const slice = filtered.slice(start, start + invSize);
+  box.innerHTML = slice.map((d, idx) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:7px 12px;border-bottom:1px solid var(--line);font-size:13px">
+      <span class="k" style="min-width:26px">#${start + idx + 1}</span>
+      <span style="flex:1"><b>${d.name}</b> <small class="k">(${d.spec})</small></span>
+      <span class="badge ${d.ctrl === '麻精管制' ? 'b-bad' : ''}">${d.ctrl}</span>
+      <span class="k">库存 <b>${d.stock}</b></span>
+    </div>`).join('') || '<div style="padding:12px;color:var(--ink3);font-size:13px">无匹配药品</div>';
+  $('#invPageInfo').textContent = `第 ${invPage} / ${totalPages} 页 · 共 ${filtered.length} 种（每页 ${invSize} 条，跨页序号连续）`;
+}
+
+$('#vacScanBtn').onclick = () => {
+  logEv('+18 ms', 'POST /vaccination/scan', '触发全院自动巡检 → 扫描 3 条，逾期 1 / 临期 2');
+  setMetrics([['巡检触发', '手动即时扫描', 'b-b'], ['逾期预警', '1 例', 'b-bad'], ['30天临期', '2 例', 'b-warn']]);
+};
+$('#vacBatchBtn').onclick = () => {
+  const picked = vacList.filter(v => v.checked);
+  let sent = 0, skipped = 0;
+  picked.forEach(v => { if (v.remindedToday) skipped++; else { v.remindedToday = true; sent++; } });
+  renderVacTable();
+  logEv('+12 ms', 'POST /vaccination/batch-remind', `选中 ${picked.length} 只 → 新发通知 ${sent} 条，幂等防骚扰跳过 ${skipped} 条`);
+  setMetrics([['本次选中', `${picked.length} 只`, 'b-b'], ['成功催办', `${sent} 条`, 'b-ok'], ['防骚扰跳过', `${skipped} 条（今日已推）`, 'b-warn']]);
+};
+$('#invSearch').oninput = (e) => { invKw = e.target.value.trim(); invPage = 1; renderInvTable(); };
+$('#invPrev').onclick = () => { if (invPage > 1) { invPage--; renderInvTable(); } };
+$('#invNext').onclick = () => { invPage++; renderInvTable(); };
+$('#invOomBtn').onclick = () => {
+  const rawSize = 999999;
+  const clamped = Math.min(Math.max(rawSize, 1), 100);
+  logEv('+1 ms', 'OOM_GUARD', `入参 size=${rawSize} → 服务端 Math.min(max(size,1),100) 强制封顶为 ${clamped}`);
+  setMetrics([['客户端请求', 'size = 999999', 'b-bad'], ['服务端封顶', `size = ${clamped}`, 'b-ok'], ['防护目标', '杜绝全表拉取 OOM', 'b-ok']]);
+};
+
 /* ============================ 场景切换 ============================ */
 function showScene(n){
+  sceneGen++;
+  setBusy(false);
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('on', i === n));
-  [0,1,2].forEach(i => $('#pane'+i).classList.toggle('hide', i !== n));
+  [0,1,2,3,4].forEach(i => $('#pane'+i).classList.toggle('hide', i !== n));
   const titles = [
     ['宠主端 · AI 分诊问答','点「下一句」按脚本推进，也可自己输入'],
     ['宠主端 · 预问诊（可选）','右侧槽位随对话逐格点亮，收尾出结构化摘要'],
-    ['医生端 · 病历起草','点「从预问诊起草」，看确诊栏如何被留白']
+    ['医生端 · 病历起草','点「从预问诊起草」，看确诊栏如何被留白'],
+    ['医生 & 药房 · 处方闸门与乐观锁发药','体验高危配伍 BLOCK、WARN 签字放行与并发发药防超扣'],
+    ['管理端 · 全院疫苗预警与进销存分页','体验幂等防骚扰批量催办、连续序号分页与防 OOM 封顶']
   ];
-  $('#tTitle').firstChild.textContent = titles[n][0] + ' ';
+  $('#tTitle .ai-name').firstChild.textContent = titles[n][0] + ' ';
   $('#tSub').textContent = titles[n][1];
-  clearEv(); setMetrics([]);
+  clearEv(); setMetrics([]); $('#stateBox').innerHTML = '';
   if (n===0) reset1();
   if (n===1) resetIntake(true);   // 进入即由 AI 发开场
   if (n===2) $('#reset2').click();
+  if (n===3) $('#reset3').click();
+  if (n===4) { renderVacTable(); renderInvTable(); setMetrics([['定时调度', '02:00 自动巡检开启', 'b-ok'], ['分页上限', 'max size = 100', 'b-b']]); }
 }
 document.querySelectorAll('.tab').forEach(t => t.onclick = () => showScene(+t.dataset.scene));
 
