@@ -150,7 +150,7 @@
         <h1>宠安康 × VetClaw<br>全栈业务闭环与 AI 临床分诊协同</h1>
         <p class="lead">
           由 <b>宠物门诊业务中台（Spring Boot 2.7 / Vue 3 / MySQL 8）</b> 与 <b>临床分诊引擎（VetClaw · FastAPI / RAG）</b> 协同构成：
-          对内覆盖「挂号并发防超卖 → 前台候诊签到 → SOAP 病历 → 处方安全硬闸门 → 药房乐观锁发药 → 全院疫苗分级预警 → 五维健康雷达」完整临床闭环；
+          对内覆盖「挂号并发防超卖 → 前台候诊签到 → SOAP 病历 → 处方安全审核闸门 → 门诊发药原子扣库与药品台账 → 全院疫苗分级预警 → 五维健康雷达」完整临床闭环；
           AI 侧以 HTTP + SSE 接入预问诊、分诊问答与病历起草，全链路以 <span class="mono">X-Trace-Id</span> 贯通，故障三级降级不阻塞主流程。
         </p>
         <div class="cta-row">
@@ -190,13 +190,13 @@
     </div>
     <div class="card feature">
       <div class="tile tile-pink"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l7 2.8v5.5c0 4.3-2.9 7.7-7 8.7-4.1-1-7-4.4-7-8.7V6.3l7-2.8z"/><path d="M9.5 9.5l5 5M14.5 9.5l-5 5"/></svg></div>
-      <h3>SOAP 病历与处方硬闸门</h3>
-      <p class="muted" style="margin:0">四段结构化病历 + 病种字典受控取值；处方引入 DDI 与物种禁忌硬闸门，高危配伍（如头孢唑林钠 + 恩诺沙星）直接 <span class="mono">BLOCK</span> 锁死发药，轻度越界 <span class="mono">WARN</span> 签字留痕。</p>
+      <h3>SOAP 病历与处方审核闸门</h3>
+      <p class="muted" style="margin:0">四段结构化病历 + 病种字典受控取值；开方强制关联院内药品台账，经 VetClaw 表驱动规则审核（剧毒/物种禁用/过敏/禁用合用），<span class="mono">block</span> 拦截发药（409），须医生填理由 HITL 复核放行并留痕。</p>
     </div>
     <div class="card feature">
       <div class="tile tile-amber"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 7.5h15v12h-15z"/><path d="M8 7.5V5.2a1.2 1.2 0 011.2-1.2h5.6A1.2 1.2 0 0116 5.2v2.3"/><path d="M9.5 13.5h5M12 11v5"/></svg></div>
-      <h3>药房乐观锁与进销存分页</h3>
-      <p class="muted" style="margin:0">发药核销触发行级乐观锁原子扣库存，杜绝超扣与负库存；台账支持多维筛选、动态分页与 <span class="mono">size≤100</span> 安全边界防 OOM。</p>
+      <h3>门诊发药扣库与药品台账</h3>
+      <p class="muted" style="margin:0">无独立药师端，由医生工作台确认发药并触发 <span class="mono">WHERE stock&gt;=qty</span> 原子扣库与麻精药审计；管理员药品台账支持多维筛选、动态分页与 <span class="mono">size≤100</span> 防 OOM。</p>
     </div>
     <div class="card feature">
       <div class="tile tile-purple"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v4.8l3.2 1.8"/></svg></div>
@@ -216,8 +216,8 @@
       <tr><th style="width:130px">业务阶段</th><th>端到端流转与技术验证点</th></tr>
       <tr><td><span class="step-pill">阶段 1 · 宠主</span></td><td>AI 预问诊（Fast-Path 急症毫秒级拦截与毒性禁忌提示） → 选定科室与医生在线挂号（唯一键防重占号）</td></tr>
       <tr><td><span class="step-pill">阶段 2 · 前台</span></td><td>前台签到核验，候诊大盘流转状态机；AI 前台模式协助 P0–P3 四级急症初筛与隔离引导</td></tr>
-      <tr><td><span class="step-pill">阶段 3 · 医生</span></td><td>接诊工作台调阅过敏史 → AI 一键起草脱敏 SOAP（确诊留白）→ 五维健康打分 → 处方配伍禁忌 <span class="mono">BLOCK</span> 硬阻断与合法开方归档</td></tr>
-      <tr><td><span class="step-pill">阶段 4 · 药房</span></td><td>归档触发行级乐观锁原子扣减库存；管理员进销存台账支持跨页连续序号、复合筛选与 <span class="mono">size=999999</span> 安全封顶拦截</td></tr>
+      <tr><td><span class="step-pill">阶段 3 · 医生</span></td><td>接诊工作台调阅过敏史 → AI 起草脱敏 SOAP（确诊留白）→ 五维健康打分 → 强制绑定药品台账开方，过安全审核（<span class="mono">block</span> 拦截发药 / HITL 复核放行留痕）</td></tr>
+      <tr><td><span class="step-pill">阶段 4 · 扣库/台账</span></td><td>医生确认发药触发 <span class="mono">WHERE stock&gt;=qty</span> 原子扣库（非独立药房端）；管理员药品台账支持跨页连续序号、物种/麻精筛选与 <span class="mono">size=999999</span> 安全封顶拦截</td></tr>
       <tr><td><span class="step-pill">阶段 5–7 · 监管</span></td><td>全院运营大盘与循证核查档案卡 → 疫苗巡检与一键防骚扰批量催办 → <span class="mono">24×24</span> 纯矢量 UI 与 <span class="mono">MCP</span> 全链路 <span class="mono">X-Trace-Id</span> 审计</td></tr>
     </table>
   </div>
@@ -370,7 +370,7 @@
       <div class="card">
         <h3>技术构成</h3>
         <ul style="margin-bottom:0">
-          <li>业务端：Spring Boot 2.7 · MyBatis-Plus · MySQL 8（唯一键防超卖 / 乐观锁扣库存 / 疫苗定时巡检 / 分页防 OOM）</li>
+          <li>业务端：Spring Boot 2.7 · MyBatis-Plus · MySQL 8（唯一键防超卖 / <span class="mono">WHERE stock&gt;=qty</span> 原子扣库 / 疫苗定时巡检 / 分页防 OOM）</li>
           <li>前端：Vue 3 · Vite · Element Plus · ECharts（全院 <span class="mono">24×24</span> 纯矢量医疗图标系统）</li>
           <li>Agent：FastAPI · ReAct + LangGraph 双引擎 · bge-small-zh 与 BM25 混合 RAG · MCP Protocol 2024-11-05</li>
           <li>工程：Java / Agent 双向 <span class="mono">X-Trace-Id</span> 追踪 · 处方 DDI 硬闸门与 HITL 留痕 · GitHub Actions CI 全绿门禁</li>

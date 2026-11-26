@@ -150,7 +150,7 @@
       <button class="tab on" data-scene="0">① 分诊问答</button>
       <button class="tab" data-scene="1">② 预问诊</button>
       <button class="tab" data-scene="2">③ 病历起草</button>
-      <button class="tab" data-scene="3">④ 处方硬闸门与发药</button>
+      <button class="tab" data-scene="3">④ 处方闸门与库存扣减</button>
       <button class="tab" data-scene="4">⑤ 疫苗预警与进销存</button>
     </div>
   </div>
@@ -213,31 +213,34 @@
 
     <div id="pane3" class="body hide" style="padding:0">
       <div class="disclaim" style="background:#ecf5ff;border-color:#d9ecff;color:#337ecc">
-        业务系统硬规则 + VetClaw DDI 审查联动：高危配伍禁止提交（BLOCK），超量预警需医生签署临床理由（WARN / HITL），发药采用数据库行级乐观锁。
+        医生工作台开方 &amp; 核销联动（无独立药房端）：开方强制绑定 <span class="k">med_inventory</span> 台账并校验余量；发药前过 VetClaw 确定性安全闸门（<span class="k">block</span> 返 409 拦截，须填理由 HITL 复核解锁），发药走 <span class="k">WHERE stock&gt;=qty</span> 条件原子扣库。
       </div>
       <div class="body" style="padding:16px">
-        <div class="grp-t">选择处方组合场景（一键模拟医生开方）：</div>
+        <div class="grp-t">选择处方审核场景（对应真实规则表 <span class="k">prescription_safety_table.json</span>）：</div>
         <div class="chips" style="padding:8px 0 0;border-top:none" id="rxChips">
-          <span class="chip r" data-rx="block">高危配伍：头孢唑林钠 + 恩诺沙星（BLOCK）</span>
-          <span class="chip g" data-rx="warn">超量预警：阿莫西林克拉维酸钾 × 2.5倍（WARN）</span>
-          <span class="chip" data-rx="ok">合规单药：速诺阿莫西林片 50mg × 2盒（PASS）</span>
+          <span class="chip r" data-rx="block">禁忌阻断：猫用对乙酰氨基酚 / 青霉素过敏开速诺（BLOCK）</span>
+          <span class="chip g" data-rx="warn">超量预警：犬用速诺 25 mg/kg 超参考上限（WARN）</span>
+          <span class="chip" data-rx="ok">合规开方：犬用速诺 12.5 mg/kg × 2盒（PASS）</span>
         </div>
 
         <div id="rxAlert" class="sysnote" style="margin-top:14px;display:none"></div>
 
         <div id="rxHitlBox" style="margin-top:12px;display:none">
-          <label style="display:block;font-size:13px;color:var(--ink2);margin-bottom:4px">HITL 临床放行理由（WARN 必填留痕）</label>
-          <input id="rxReason" value="重症急性细菌感染，经体重复核后短期冲击给药并监测肾功" style="width:100%;border:1px solid var(--line);border-radius:6px;padding:8px 11px;font:13.5px var(--sans)">
+          <label style="display:block;font-size:13px;color:var(--ink2);margin-bottom:4px">人工复核放行理由（HITL · 推翻 block 必填，最多 500 字并写入审计日志）</label>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="rxReason" value="经临床复核与宠主知情沟通，确需短期低剂量替代观察并严密监测" style="flex:1;border:1px solid var(--line);border-radius:6px;padding:8px 11px;font:13.5px var(--sans)">
+            <button class="btn" id="rxOverrideBtn" style="padding:7px 12px;font-size:13px">确认人工放行</button>
+          </div>
         </div>
 
         <div style="margin-top:16px">
-          <div class="grp-t">药房库存实时账本（当前在库）：</div>
+          <div class="grp-t">院内药品台账实时余量（<span class="k">med_inventory</span>）：</div>
           <div id="drugStockList" style="border:1px solid var(--line);border-radius:8px;padding:10px 14px;background:#fafcff;margin-top:6px"></div>
         </div>
       </div>
       <div class="bar">
-        <button class="btn p" id="rxSubmitBtn" disabled>提交处方并药房乐观锁发药</button>
-        <button class="btn" id="rxRaceBtn">模拟双线程并发发药冲突</button>
+        <button class="btn p" id="rxSubmitBtn" disabled>医生确认发药并扣减台账</button>
+        <button class="btn" id="rxRaceBtn">模拟并发双请求发药防超扣</button>
         <button class="btn" id="reset3">重置演示</button>
       </div>
     </div>
@@ -878,12 +881,13 @@ $('#reset2').onclick = () => { ['#fS','#fO','#fP','#fA'].forEach(s => $(s).value
   $('#fA').placeholder = '请医生填写临床诊断结论'; $('#draftBtn').disabled = false; clearEv();
   $('#draftTip').textContent = 'AI 起草主诉 / 建议查体 / 医嘱草稿；确诊与处方由医生填写'; setMetrics([]); };
 
-/* ============================ 场景④ 处方硬闸门与药房乐观锁 ============================ */
+/* ============================ 场景④ 处方闸门与台账原子扣减 ============================ */
 let rxMode = null;
+let rxOverridden = false;
 const rxStockInit = () => ({
-  cefazolin: { name:'头孢唑林钠注射液 0.5g', stock: 28, ver: 12, unit:'支' },
-  enro:      { name:'恩诺沙星注射液 50mg', stock: 19, ver: 7,  unit:'支' },
-  synulox:   { name:'速诺阿莫西林克拉维酸钾片 50mg', stock: 42, ver: 31, unit:'盒' }
+  synulox:   { name:'速诺阿莫西林克拉维酸钾片 50mg*14片', stock: 42, unit:'盒', tag:'普通' },
+  itracon:   { name:'伊曲康唑胶囊 100mg*14粒', stock: 19, unit:'盒', tag:'普通' },
+  ketamine:  { name:'氯胺酮注射液 2ml:0.1g', stock: 8,  unit:'支', tag:'受控麻精' }
 });
 let rxStock = rxStockInit();
 
@@ -891,76 +895,86 @@ function renderDrugStock(){
   const box = $('#drugStockList');
   if (!box) return;
   box.innerHTML = Object.values(rxStock).map(d =>
-    `<div class="metric"><span>${d.name} <small class="k">(v${d.ver})</small></span><b>${d.stock} ${d.unit}</b></div>`
+    `<div class="metric"><span>${d.name} <span class="badge ${d.tag === '受控麻精' ? 'b-bad' : ''}">${d.tag}</span></span><b>${d.stock} ${d.unit}</b></div>`
   ).join('');
 }
 
 function selectRx(mode){
   rxMode = mode;
+  rxOverridden = false;
   document.querySelectorAll('#rxChips .chip').forEach(c => c.classList.toggle('used', c.dataset.rx !== mode));
-  const al = $('#rxAlert'), hitl = $('#rxHitlBox'), btn = $('#rxSubmitBtn');
+  const al = $('#rxAlert'), hitl = $('#rxHitlBox'), btn = $('#rxSubmitBtn'), ovBtn = $('#rxOverrideBtn');
   al.style.display = 'block';
+  if (ovBtn) { ovBtn.disabled = false; ovBtn.textContent = '确认人工放行'; }
   if (mode === 'block'){
     al.style.cssText = 'margin-top:14px;padding:10px 12px;border-radius:8px;border:1px solid var(--danger-line);background:var(--danger-soft);color:#b91c1c;font-size:13px';
-    al.innerHTML = '<b>⛔ 【高危配伍禁忌 · BLOCK 阻断】</b><br>头孢唑林钠水溶液（偏酸）与恩诺沙星（偏碱）混合会发生酸碱中和沉淀，产生微细晶体引发血管栓塞风险！发药与提交按钮已物理级锁死。';
-    hitl.style.display = 'none';
+    al.innerHTML = '<b>⛔ 【确定性阻断 · BLOCK（未放行前禁发药）】</b><br>命中法定/过敏规则：如「猫使用对乙酰氨基酚（TOXIN_IN_PRESCRIPTION）」或「青霉素过敏宠开具速诺（ALLERGY_CONTRAINDICATION）」。医生工作台「确认发药」已禁用，后端 <span class="k">assertReviewAllows()</span> 无条件拦截并返 <b>409 Conflict</b>；若临床确需推翻，须填写理由走 HITL 人工复核放行。';
+    hitl.style.display = 'block';
     btn.disabled = true;
-    logEv('+2 ms', 'DDI_BLOCK', '拦截高危配伍：头孢唑林钠 + 恩诺沙星（HTTP 422）');
-    setMetrics([['规则引擎', 'DDI 硬闸门触发', 'b-bad'], ['决策级别', 'BLOCK（物理锁死）', 'b-bad'],
-      ['溯源块', 'ddi_compatibility#14', 'b-b'], ['库存扣减', '0（未放行）', 'b-ok']]);
+    logEv('+2 ms', 'RX_REVIEW_BLOCK', 'VetClaw 返回 verdict=block（内容指纹幂等键）→ 后端闸门锁死发药 409');
+    setMetrics([['规则引擎', '纯规则表驱动（0 LLM）', 'b-bad'], ['决策级别', 'block（409 拦截发药）', 'b-bad'],
+      ['溯源块', 'paracetamol_toxicity.md#1', 'b-b'], ['台账扣减', '0（事务未触发）', 'b-ok']]);
   } else if (mode === 'warn'){
     al.style.cssText = 'margin-top:14px;padding:10px 12px;border-radius:8px;border:1px solid var(--warn-line);background:var(--warn-soft);color:#b45309;font-size:13px';
-    al.innerHTML = '<b>⚠ 【剂量越界预警 · WARN】</b><br>当前单次剂量超过犬常规上限 1.8×，需执业兽医实名填写临床放行理由（HITL 人工在环留痕）后方可继续发药。';
+    al.innerHTML = '<b>⚠ 【剂量超参考上限 · WARN】</b><br>犬用速诺参考上限 12.5 mg/kg，当前开具 25 mg/kg（<span class="k">DOSE_ABOVE_REFERENCE</span>）。系统不禁止发药但强提示医生核对依据，亦可在下方填写理由留痕。';
     hitl.style.display = 'block';
     btn.disabled = false;
-    logEv('+4 ms', 'DOSE_WARN', '触发 WARN 预警 → 等待 HITL 临床理由签字');
-    setMetrics([['规则引擎', '剂量超限阈值', 'b-warn'], ['决策级别', 'WARN（HITL 留痕）', 'b-warn'],
-      ['强制字段', 'clinical_reason', 'b-b'], ['当前状态', '待医生签字放行', 'b-warn']]);
+    logEv('+3 ms', 'RX_REVIEW_WARN', '触发 DOSE_ABOVE_REFERENCE → 提示核对依据，可确认发药');
+    setMetrics([['规则引擎', '剂量超参考上限', 'b-warn'], ['决策级别', 'warn（核对可放行）', 'b-warn'],
+      ['溯源块', 'prescription_and_otc_drugs.md#速诺-1', 'b-b'], ['发药权限', '允许（前端提示核对）', 'b-ok']]);
   } else {
     al.style.cssText = 'margin-top:14px;padding:10px 12px;border-radius:8px;border:1px solid var(--ok-line);background:var(--ok-soft);color:#047857;font-size:13px';
-    al.innerHTML = '<b>✓ 【处方审查通过 · PASS】</b><br>未检出配伍禁忌或超量风险，允许提交并扣减药房在库数量（2 盒）。';
+    al.innerHTML = '<b>✓ 【审核通过 · PASS】</b><br>物种、过敏史、参考剂量与禁用合用关键词均通过校验；确认发药将在同一事务内执行 <span class="k">WHERE stock &gt;= 2</span> 原子扣库，并把处方推入 <span class="k">DISPENSED</span> 供前台结算。';
     hitl.style.display = 'none';
     btn.disabled = false;
-    logEv('+2 ms', 'RX_PASS', 'DDI & 剂量审查全通过 → 就绪待发药');
-    setMetrics([['规则引擎', '配伍/物种全通过', 'b-ok'], ['决策级别', 'PASS', 'b-ok'],
-      ['拟扣减药品', '速诺阿莫西林 × 2 盒', 'b-b'], ['锁机制', '行级乐观锁 version', 'b-ok']]);
+    logEv('+2 ms', 'RX_REVIEW_PASS', '安全规则全部通过 → 就绪待医生确认发药');
+    setMetrics([['规则引擎', '规则表全通过', 'b-ok'], ['决策级别', 'pass', 'b-ok'],
+      ['拟扣减药品', '速诺阿莫西林 × 2 盒', 'b-b'], ['防超扣机制', 'WHERE stock >= qty', 'b-ok']]);
   }
 }
 
 document.querySelectorAll('#rxChips .chip').forEach(c => c.onclick = () => selectRx(c.dataset.rx));
+$('#rxOverrideBtn').onclick = () => {
+  if (!rxMode) return;
+  const reason = $('#rxReason').value.trim();
+  if (!reason) { $('#rxReason').focus(); return; }
+  rxOverridden = true;
+  $('#rxSubmitBtn').disabled = false;
+  $('#rxOverrideBtn').disabled = true;
+  $('#rxOverrideBtn').textContent = '已人工放行 ✓';
+  logEv('+6 ms', 'POST /review/override', `HITL 人工放行留痕（@AuditLog RX_REVIEW_OVERRIDE）：${reason.slice(0,20)}…`);
+  setMetrics([['人工放行', '已签署理由（≤500字）', 'b-warn'], ['闸门状态', 'block 已解锁（可发药）', 'b-ok'],
+    ['改方重审约束', '改方会清空本次放行', 'b-b'], ['审计动作', 'RX_REVIEW_OVERRIDE', 'b-ok']]);
+};
 $('#rxSubmitBtn').onclick = () => {
-  if (!rxMode || rxMode === 'block') return;
-  if (rxMode === 'warn' && !$('#rxReason').value.trim()){ $('#rxReason').focus(); return; }
+  if (!rxMode) return;
+  if (rxMode === 'block' && !rxOverridden) return;
   if (rxStock.synulox.stock < 2){
-    logEv('—', 'OUT_OF_STOCK', '库存不足，事务整体回滚');
+    logEv('—', 'OUT_OF_STOCK_409', '影响行数 0 → 抛 409 CONFLICT，事务整体回滚');
     return;
   }
-  const oldV = rxStock.synulox.ver;
   rxStock.synulox.stock -= 2;
-  rxStock.synulox.ver += 1;
   renderDrugStock();
-  logEv('+11 ms', 'SQL_OPT_LOCK', `UPDATE sys_drug SET stock=stock-2, version=${rxStock.synulox.ver} WHERE id=3 AND version=${oldV} → 1 row`);
-  if (rxMode === 'warn') logEv('+14 ms', 'AUDIT_HITL', `已留痕放行理由：${$('#rxReason').value.slice(0,22)}...`);
-  setMetrics([['事务提交', '1 行更新成功', 'b-ok'], ['乐观锁版本', `v${oldV} → v${rxStock.synulox.ver}`, 'b-ok'],
-    ['剩余库存', `${rxStock.synulox.stock} 盒`, 'b-b'], ['审计留痕', rxMode === 'warn' ? 'HITL_WARN ✓' : 'DISPENSE ✓', 'b-ok']]);
+  logEv('+11 ms', 'POST /prescription/dispense', `UPDATE med_inventory SET stock=stock-2 WHERE id=1 AND stock>=2 → 1 row；status=DISPENSED`);
+  setMetrics([['SQL 原子扣减', '1 行更新成功（防负库存）', 'b-ok'], ['处方状态', 'PENDING → DISPENSED', 'b-ok'],
+    ['剩余库存', `${rxStock.synulox.stock} 盒`, 'b-b'], ['审计留痕', rxOverridden ? 'OVERRIDE + DISPENSE ✓' : 'RX_DISPENSE ✓', 'b-ok']]);
 };
 $('#rxRaceBtn').onclick = () => {
   if (rxStock.synulox.stock < 2) rxStock = rxStockInit();
-  const oldV = rxStock.synulox.ver;
   rxStock.synulox.stock -= 2;
-  rxStock.synulox.ver += 1;
   renderDrugStock();
-  logEv('+0 ms', 'CONCURRENT_T1', `线程 A 读取 version=${oldV} → 扣减 2 盒提交成功 (v${rxStock.synulox.ver})`);
-  logEv('+3 ms', 'CONCURRENT_T2', `线程 B 携带旧 version=${oldV} 更新 → affected=0，触发乐观锁冲突拦截 ✓`);
-  setMetrics([['并发请求数', '2 线程同秒发药', 'b-b'], ['线程 A 结果', '扣减成功 (1 row)', 'b-ok'],
-    ['线程 B 结果', '乐观锁版本过期拦截', 'b-warn'], ['库存防超扣', '已拦截（无负库存）', 'b-ok']]);
+  logEv('+0 ms', 'DISPENSE_T1', `请求 A 在事务内执行 UPDATE ... WHERE id=1 AND stock>=2 → 1 row，处方置 DISPENSED`);
+  logEv('+3 ms', 'DISPENSE_T2', `请求 B 同毫秒进入 → 处方非 PENDING 或 stock<qty（0 row）→ 409 回滚拦截 ✓`);
+  setMetrics([['并发场景', '双请求同秒发药', 'b-b'], ['请求 A 结果', '扣减成功 → DISPENSED', 'b-ok'],
+    ['请求 B 结果', '409 CONFLICT 事务回滚', 'b-warn'], ['库存一致性', '绝不超扣 / 无负库存', 'b-ok']]);
 };
 $('#reset3').onclick = () => {
-  rxMode = null; rxStock = rxStockInit(); renderDrugStock();
+  rxMode = null; rxOverridden = false; rxStock = rxStockInit(); renderDrugStock();
   $('#rxAlert').style.display = 'none'; $('#rxHitlBox').style.display = 'none';
   $('#rxSubmitBtn').disabled = true;
+  if ($('#rxOverrideBtn')) { $('#rxOverrideBtn').disabled = false; $('#rxOverrideBtn').textContent = '确认人工放行'; }
   document.querySelectorAll('#rxChips .chip').forEach(c => c.classList.remove('used'));
-  clearEv(); setMetrics([['当前状态', '待选择处方组合', 'b-b']]);
+  clearEv(); setMetrics([['当前状态', '待选择处方审核场景', 'b-b']]);
 };
 
 /* ============================ 场景⑤ 疫苗预警与进销存分页 ============================ */
@@ -1051,7 +1065,7 @@ function showScene(n){
     ['宠主端 · AI 分诊问答','点「下一句」按脚本推进，也可自己输入'],
     ['宠主端 · 预问诊（可选）','右侧槽位随对话逐格点亮，收尾出结构化摘要'],
     ['医生端 · 病历起草','点「从预问诊起草」，看确诊栏如何被留白'],
-    ['医生 & 药房 · 处方闸门与乐观锁发药','体验高危配伍 BLOCK、WARN 签字放行与并发发药防超扣'],
+    ['医生端 · 处方闸门与库存扣减','体验 BLOCK 409 拦截、HITL 放行、WARN 核对与条件原子扣库'],
     ['管理端 · 全院疫苗预警与进销存分页','体验幂等防骚扰批量催办、连续序号分页与防 OOM 封顶']
   ];
   $('#tTitle .ai-name').firstChild.textContent = titles[n][0] + ' ';
